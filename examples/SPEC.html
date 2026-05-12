@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Team Invites — SPEC</title>
+  <!-- Note: this exemplar lives next to the assets (flat paths).
+       Real specs live at .specs/<id>/SPEC.html and reference ../assets/
+       — see references/html-template.html for the canonical paths. -->
+  <link rel="stylesheet" href="spec-styles.css">
+  <script src="spec-runtime.js" defer></script>
+  <!-- region:meta -->
+  <script type="application/json" id="spec-meta">{"id":"team-invites","title":"Team Invites","status":"active","created":"2026-05-08","updated":"2026-05-12","priority":"high","tags":["feature","auth","ui"],"mockup-fidelity":"hi-fi"}</script>
+  <!-- endregion:meta -->
+</head>
+<body>
+<div class="page">
+
+  <!-- region:toc -->
+  <nav class="toc" data-toc aria-label="Spec sections">
+    <h4>Sections</h4>
+    <ol>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#acceptance">Acceptance Criteria</a></li>
+      <li><a href="#architecture">Architecture</a></li>
+      <li><a href="#libraries">Library Choices</a></li>
+      <li><a href="#phases">Phases &amp; Tasks</a></li>
+      <li><a href="#code">Code Previews</a></li>
+      <li><a href="#mockups">UI Mockups</a></li>
+      <li><a href="#decisions">Decision Log</a></li>
+      <li><a href="#deviations">Deviations</a></li>
+    </ol>
+  </nav>
+  <!-- endregion:toc -->
+
+  <main class="content">
+
+    <!-- region:header -->
+    <header class="spec-header" id="spec-header">
+      <div class="spec-header__top">
+        <div>
+          <h1 class="spec-header__title">Team Invites</h1>
+          <div class="spec-header__id">team-invites</div>
+        </div>
+        <div class="spec-header__chips">
+          <span class="pill pill--in-progress">Active</span>
+          <span class="pill pill--accent pill--no-dot">High priority</span>
+        </div>
+      </div>
+      <dl class="spec-header__meta">
+        <div><dt>Created</dt><dd>2026-05-08</dd></div>
+        <div><dt>Updated</dt><dd>2026-05-12</dd></div>
+        <div><dt>Tags</dt><dd><span class="chip">feature</span> <span class="chip">auth</span> <span class="chip">ui</span></dd></div>
+        <div><dt>Mockup fidelity</dt><dd>hi-fi</dd></div>
+      </dl>
+      <div class="scorecard">
+        <div class="scorecard__cell">
+          <div class="scorecard__label">Tasks</div>
+          <div class="scorecard__value"><span data-progress-target="spec-total">0/0</span></div>
+          <div class="scorecard__sub"><span data-progress-target="spec-pct">0%</span> complete</div>
+        </div>
+        <div class="scorecard__cell">
+          <div class="scorecard__label">Phases</div>
+          <div class="scorecard__value"><span data-progress-target="phases-done">0</span> / <span data-progress-target="phases-total">0</span></div>
+          <div class="scorecard__sub">done</div>
+        </div>
+        <div class="scorecard__cell">
+          <div class="scorecard__label">Acceptance</div>
+          <div class="scorecard__value"><span data-progress-target="ac-done">0</span> / <span data-progress-target="ac-total">0</span></div>
+          <div class="scorecard__sub">criteria met</div>
+        </div>
+        <div class="scorecard__cell">
+          <div class="scorecard__label">Blockers</div>
+          <div class="scorecard__value"><span data-progress-target="blockers">0</span></div>
+          <div class="scorecard__sub">open</div>
+        </div>
+      </div>
+    </header>
+    <!-- endregion:header -->
+
+    <!-- region:overview -->
+    <section class="section" id="overview">
+      <div class="section__header"><h2 class="section__title">Overview</h2></div>
+      <p>Add team-invite capability so workspace owners can send signup links to teammates, assign their role on creation, and revoke pending invites before they're accepted. Tokens expire after seven days and are single-use. The flow touches the database (new <code>invites</code> table), two API endpoints, and three new UI screens (invite form, pending list, accept landing).</p>
+    </section>
+    <!-- endregion:overview -->
+
+    <!-- region:acceptance -->
+    <section class="section" id="acceptance">
+      <div class="section__header">
+        <h2 class="section__title">Acceptance Criteria</h2>
+        <span class="pill pill--accent pill--no-dot"><span data-progress-target="ac-done">0</span>/<span data-progress-target="ac-total">0</span></span>
+      </div>
+      <span class="progress progress--strip mb-3" data-progress-bar="ac" aria-hidden="true"></span>
+      <ul class="ac-list">
+        <li class="ac-item" id="ac-1" data-ac="1" data-status="completed">
+          <span class="ac-check"></span>
+          <span class="ac-text">Workspace owner can submit an email + role and receive a confirmation toast.</span>
+        </li>
+        <li class="ac-item" id="ac-2" data-ac="2" data-status="completed">
+          <span class="ac-check"></span>
+          <span class="ac-text">Pending invites are persisted in <code>invites</code> with a 7-day TTL.</span>
+        </li>
+        <li class="ac-item" id="ac-3" data-ac="3" data-status="pending">
+          <span class="ac-check"></span>
+          <span class="ac-text">Accepting a valid token creates the user with the assigned role and consumes the invite.</span>
+        </li>
+        <li class="ac-item" id="ac-4" data-ac="4" data-status="pending">
+          <span class="ac-check"></span>
+          <span class="ac-text">Expired or already-consumed tokens return <code>410 Gone</code> with a friendly error page.</span>
+        </li>
+        <li class="ac-item" id="ac-5" data-ac="5" data-status="pending">
+          <span class="ac-check"></span>
+          <span class="ac-text">Owners can revoke a pending invite from the list, which immediately invalidates the token.</span>
+        </li>
+        <li class="ac-item" id="ac-6" data-ac="6" data-status="pending">
+          <span class="ac-check"></span>
+          <span class="ac-text"><span class="ac-flag">Needs clarification</span>Rate limiting on the invite endpoint — per-workspace cap vs. per-user cap is undecided.</span>
+        </li>
+      </ul>
+    </section>
+    <!-- endregion:acceptance -->
+
+    <!-- region:architecture -->
+    <section class="section" id="architecture">
+      <div class="section__header"><h2 class="section__title">Architecture</h2></div>
+
+      <figure class="diagram">
+        <div class="diagram__label">System flow</div>
+<pre class="mermaid">
+flowchart LR
+  O[Owner] -->|POST /invites| API[API /invites]
+  API -->|insert| DB[(invites table)]
+  API -->|enqueue| Q[Mail queue]
+  Q --> M[Mailer]
+  M -->|invite link| I[Invitee inbox]
+  I -->|GET /accept/:token| Web[Web /accept]
+  Web -->|POST /invites/:token/accept| API
+  API -->|consume + create user| DB
+</pre>
+      </figure>
+
+      <figure class="diagram">
+        <div class="diagram__label">Data model</div>
+<pre class="mermaid">
+erDiagram
+  WORKSPACES ||--o{ INVITES : owns
+  WORKSPACES ||--o{ USERS : has
+  INVITES {
+    uuid id PK
+    uuid workspace_id FK
+    text email
+    text role
+    text token_hash
+    timestamptz expires_at
+    timestamptz consumed_at
+    uuid created_by FK
+    timestamptz created_at
+  }
+  USERS {
+    uuid id PK
+    text email
+    text role
+    uuid workspace_id FK
+  }
+</pre>
+      </figure>
+
+      <figure class="diagram">
+        <div class="diagram__label">Accept lifecycle</div>
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor Invitee
+  participant Web as Web /accept
+  participant API as API
+  participant DB as invites table
+
+  Invitee->>Web: GET /accept/:token
+  Web->>API: lookup(token)
+  API->>DB: SELECT by token_hash
+  alt valid + unexpired + unconsumed
+    DB-->>API: row
+    API-->>Web: 200 invite preview
+    Web-->>Invitee: render accept form
+    Invitee->>API: POST /invites/:token/accept (password)
+    API->>DB: UPDATE consumed_at, INSERT user
+    API-->>Invitee: 201 + session cookie
+  else expired or consumed
+    DB-->>API: row (or none)
+    API-->>Web: 410 Gone
+    Web-->>Invitee: friendly error + "request a new invite"
+  end
+</pre>
+      </figure>
+    </section>
+    <!-- endregion:architecture -->
+
+    <!-- region:libraries -->
+    <section class="section" id="libraries">
+      <div class="section__header"><h2 class="section__title">Library Choices</h2></div>
+      <table class="table">
+        <thead>
+          <tr><th>Need</th><th>Library</th><th>Version</th><th>Alternatives</th><th>Rationale</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Token generation</td>
+            <td><code>nanoid</code></td>
+            <td>5.0.7</td>
+            <td>uuid v7, crypto.randomUUID</td>
+            <td>URL-safe by default, configurable length, well-audited.</td>
+          </tr>
+          <tr>
+            <td>Mail queue</td>
+            <td><code>BullMQ</code></td>
+            <td>5.34.0</td>
+            <td>pg-boss, in-process</td>
+            <td>Project already uses Redis; BullMQ retries and DLQ semantics are mature.</td>
+          </tr>
+          <tr>
+            <td>Email template</td>
+            <td><code>react-email</code></td>
+            <td>3.0.5</td>
+            <td>mjml, handwritten</td>
+            <td>Components match the in-app design tokens; preview server in dev.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+    <!-- endregion:libraries -->
+
+    <!-- region:phases -->
+    <section class="section" id="phases">
+      <div class="section__header">
+        <h2 class="section__title">Phases &amp; Tasks</h2>
+        <span class="pill pill--accent pill--no-dot"><span data-progress-target="spec-total">0/0</span> tasks</span>
+      </div>
+      <div class="phases">
+
+        <details class="phase" open data-phase="1" data-status="completed">
+          <summary class="phase__header">
+            <span class="phase__index">Phase 1</span>
+            <h3 class="phase__title">Database &amp; API Foundation</h3>
+            <span class="pill pill--completed">Completed</span>
+            <span class="phase__progress"><span data-progress-target="phase-1-total">0/0</span></span>
+          </summary>
+          <div class="phase__body">
+            <ul class="task-list">
+              <li class="task"
+                  id="task-INV-01"
+                  data-task="INV-01"
+                  data-status="completed">
+                <span class="task__check"></span>
+                <span class="task__code">INV-01</span>
+                <span class="task__text">Add <code>invites</code> migration with email, role, token_hash, expires_at, consumed_at columns.</span>
+                <span class="task__tags"><span class="task__tag">#db</span></span>
+              </li>
+              <li class="task"
+                  id="task-INV-02"
+                  data-task="INV-02"
+                  data-status="completed">
+                <span class="task__check"></span>
+                <span class="task__code">INV-02</span>
+                <span class="task__text">Implement <code>POST /invites</code> handler with Zod validation and BullMQ enqueue.</span>
+                <span class="task__tags"><span class="task__tag">#api</span></span>
+              </li>
+              <li class="task"
+                  id="task-INV-03"
+                  data-task="INV-03"
+                  data-status="completed">
+                <span class="task__check"></span>
+                <span class="task__code">INV-03</span>
+                <span class="task__text">Implement <code>GET /invites?status=pending</code> for the owner dashboard list.</span>
+                <span class="task__tags"><span class="task__tag">#api</span></span>
+              </li>
+            </ul>
+          </div>
+        </details>
+
+        <details class="phase" open data-phase="2" data-status="in-progress">
+          <summary class="phase__header">
+            <span class="phase__index">Phase 2</span>
+            <h3 class="phase__title">Invite Flow (Owner UI)</h3>
+            <span class="pill pill--in-progress">In progress</span>
+            <span class="phase__progress"><span data-progress-target="phase-2-total">0/0</span></span>
+          </summary>
+          <div class="phase__body">
+            <span class="progress progress--strip mb-3" data-progress-bar="phase-2" aria-hidden="true"></span>
+            <ul class="task-list">
+              <li class="task"
+                  id="task-INV-04"
+                  data-task="INV-04"
+                  data-status="completed">
+                <span class="task__check"></span>
+                <span class="task__code">INV-04</span>
+                <span class="task__text">Build <code>InviteForm</code> component in <code>src/team/InviteForm.tsx</code> — email input, role select, submit.</span>
+                <span class="task__tags"><span class="task__tag">#ui</span></span>
+              </li>
+              <li class="task"
+                  id="task-INV-05"
+                  data-task="INV-05"
+                  data-status="pending">
+                <span class="task__check"></span>
+                <span class="task__code">INV-05</span>
+                <span class="task__text">Wire <code>InviteForm</code> to <code>POST /invites</code>; show success toast and reset the form.</span>
+                <span class="task__tags"><span class="task__tag">#ui</span></span>
+              </li>
+              <li class="task"
+                  id="task-INV-06"
+                  data-task="INV-06"
+                  data-status="pending">
+                <span class="task__check"></span>
+                <span class="task__code">INV-06</span>
+                <span class="task__text">Build <code>PendingInvitesList</code> in <code>src/team/PendingInvitesList.tsx</code> with role badge and revoke action.</span>
+                <span class="task__tags"><span class="task__tag">#ui</span></span>
+              </li>
+              <li class="task"
+                  id="task-INV-07"
+                  data-task="INV-07"
+                  data-status="pending">
+                <span class="task__check"></span>
+                <span class="task__code">INV-07</span>
+                <span class="task__text">Implement <code>DELETE /invites/:id</code> and wire the revoke button.</span>
+                <span class="task__tags"><span class="task__tag">#api</span><span class="task__tag">#ui</span></span>
+              </li>
+            </ul>
+          </div>
+        </details>
+
+        <details class="phase" open data-phase="3" data-status="pending">
+          <summary class="phase__header">
+            <span class="phase__index">Phase 3</span>
+            <h3 class="phase__title">Accept Flow (Invitee)</h3>
+            <span class="pill pill--pending">Pending</span>
+            <span class="phase__progress"><span data-progress-target="phase-3-total">0/0</span></span>
+          </summary>
+          <div class="phase__body">
+            <ul class="task-list">
+              <li class="task" id="task-INV-08" data-task="INV-08" data-status="pending">
+                <span class="task__check"></span>
+                <span class="task__code">INV-08</span>
+                <span class="task__text">Build <code>/accept/:token</code> page: token preview, password input, accept button.</span>
+                <span class="task__tags"><span class="task__tag">#ui</span></span>
+              </li>
+              <li class="task" id="task-INV-09" data-task="INV-09" data-status="pending">
+                <span class="task__check"></span>
+                <span class="task__code">INV-09</span>
+                <span class="task__text">Implement <code>POST /invites/:token/accept</code> — validate, consume, create user, sign in.</span>
+                <span class="task__tags"><span class="task__tag">#api</span></span>
+              </li>
+              <li class="task" id="task-INV-10" data-task="INV-10" data-status="pending">
+                <span class="task__check"></span>
+                <span class="task__code">INV-10</span>
+                <span class="task__text">Render 410 Gone page for expired/consumed tokens with a "request a new invite" CTA.</span>
+                <span class="task__tags"><span class="task__tag">#ui</span></span>
+              </li>
+            </ul>
+          </div>
+        </details>
+
+        <details class="phase" open data-phase="4" data-status="pending">
+          <summary class="phase__header">
+            <span class="phase__index">Phase 4</span>
+            <h3 class="phase__title">Polish &amp; Edge Cases</h3>
+            <span class="pill pill--pending">Pending</span>
+            <span class="phase__progress"><span data-progress-target="phase-4-total">0/0</span></span>
+          </summary>
+          <div class="phase__body">
+            <ul class="task-list">
+              <li class="task" id="task-INV-11" data-task="INV-11" data-status="pending">
+                <span class="task__check"></span>
+                <span class="task__code">INV-11</span>
+                <span class="task__text">Empty state for <code>PendingInvitesList</code> with illustration and "Invite first teammate" button.</span>
+                <span class="task__tags"><span class="task__tag">#ui</span></span>
+              </li>
+              <li class="task" id="task-INV-12" data-task="INV-12" data-status="pending">
+                <span class="task__check"></span>
+                <span class="task__code">INV-12</span>
+                <span class="task__text">Add rate limit middleware once policy is decided (see Acceptance Criterion #6).</span>
+                <span class="task__tags"><span class="task__tag">#api</span></span>
+              </li>
+            </ul>
+          </div>
+        </details>
+
+      </div>
+    </section>
+    <!-- endregion:phases -->
+
+    <!-- region:code -->
+    <section class="section" id="code">
+      <div class="section__header"><h2 class="section__title">Code Previews</h2></div>
+
+      <figure class="code-diff" data-file="db/migrations/20260508_invites.sql" data-language="sql" data-view="unified">
+        <figcaption>
+          <span><code>db/migrations/20260508_invites.sql</code></span>
+          <span class="code-diff__meta">+18 / new file</span>
+        </figcaption>
+<pre class="language-diff-sql diff-highlight"><code>+ CREATE TABLE invites (
++   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
++   workspace_id    UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
++   email           TEXT NOT NULL,
++   role            TEXT NOT NULL CHECK (role IN ('owner','admin','member')),
++   token_hash      TEXT NOT NULL UNIQUE,
++   expires_at      TIMESTAMPTZ NOT NULL,
++   consumed_at     TIMESTAMPTZ,
++   created_by      UUID NOT NULL REFERENCES users(id),
++   created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
++ );
++ CREATE INDEX idx_invites_workspace_status
++   ON invites (workspace_id) WHERE consumed_at IS NULL;
++ CREATE INDEX idx_invites_token_hash ON invites (token_hash);</code></pre>
+      </figure>
+
+      <figure class="code-diff" data-file="src/api/invites/handler.ts" data-language="typescript">
+        <figcaption>
+          <span><code>src/api/invites/handler.ts</code></span>
+          <span class="code-diff__meta">+12 / -4</span>
+        </figcaption>
+<pre class="language-diff-typescript diff-highlight"><code>  export async function createInvite(req: Request, res: Response) {
+    const body = inviteSchema.parse(req.body);
+-   const token = randomBytes(24).toString('hex');
++   const token = nanoid(32);
++   const tokenHash = await hashToken(token);
+-   await db.invites.insert({ ...body, token });
++   await db.invites.insert({
++     ...body,
++     workspace_id: req.workspace.id,
++     token_hash: tokenHash,
++     expires_at: addDays(new Date(), 7),
++     created_by: req.user.id,
++   });
++   await mailQueue.add('invite', { email: body.email, token });
+    return res.status(201).json({ ok: true });
+  }</code></pre>
+      </figure>
+    </section>
+    <!-- endregion:code -->
+
+    <!-- region:mockups -->
+    <section class="section" id="mockups">
+      <div class="section__header"><h2 class="section__title">UI Mockups</h2></div>
+
+      <figure class="mockup mockup--wireframe">
+        <figcaption>
+          <span><strong>Wireframe</strong> &middot; Invite form (Phase 2)</span>
+          <span class="code-diff__meta">structural — design TBD</span>
+        </figcaption>
+        <div class="mockup__chrome">
+          <span class="mockup__dot mockup__dot--red"></span>
+          <span class="mockup__dot mockup__dot--yellow"></span>
+          <span class="mockup__dot mockup__dot--green"></span>
+          <span class="mockup__url">app.example.com/team</span>
+        </div>
+        <div class="mockup__body">
+          <div class="wf-frame">
+            <div class="wf-row wf-row--header">
+              <span class="wf-heading wf-heading--lg"></span>
+              <span class="wf-pill"></span>
+            </div>
+            <div class="wf-row wf-row--body" style="gap: var(--space-4);">
+              <aside class="wf-sidebar">
+                <div class="wf-list-item"></div>
+                <div class="wf-list-item wf-list-item--active"></div>
+                <div class="wf-list-item"></div>
+                <div class="wf-list-item"></div>
+              </aside>
+              <main class="wf-content">
+                <span class="wf-heading"></span>
+                <div class="wf-spacer"></div>
+                <span class="wf-input--label">Email</span>
+                <span class="wf-input" id="wf-input-email"></span>
+                <span class="wf-input--label">Role</span>
+                <span class="wf-input"></span>
+                <div class="wf-spacer"></div>
+                <span class="wf-button wf-button--primary" id="wf-cta">Send invite</span>
+                <span class="wf-button wf-button--ghost" style="margin-left: 8px;">Cancel</span>
+              </main>
+            </div>
+            <div class="wf-annotation wf-annotation--top-right" data-points-to="wf-input-email">Email validates on blur</div>
+            <div class="wf-annotation wf-annotation--bottom-right" data-points-to="wf-cta">Disabled until form is valid</div>
+          </div>
+        </div>
+      </figure>
+
+      <figure class="mockup mockup--hifi">
+        <figcaption>
+          <span><strong>Hi-fi</strong> &middot; Pending invites list (Phase 2)</span>
+          <span class="code-diff__meta">design-locked</span>
+        </figcaption>
+        <div class="mockup__chrome">
+          <span class="mockup__dot mockup__dot--red"></span>
+          <span class="mockup__dot mockup__dot--yellow"></span>
+          <span class="mockup__dot mockup__dot--green"></span>
+          <span class="mockup__url">app.example.com/team/invites</span>
+        </div>
+        <div class="mockup__body">
+          <div class="ui-card">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="ui-card__title">Pending invites</h3>
+              <button class="ui-button ui-button--primary ui-button--sm">+ Invite teammate</button>
+            </div>
+            <table class="ui-table">
+              <thead>
+                <tr><th>Email</th><th>Role</th><th>Invited by</th><th>Expires</th><th></th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>daniela@acme.io</td>
+                  <td><span class="ui-tag ui-tag--info">admin</span></td>
+                  <td><span class="ui-avatar">GV</span> Gabriel</td>
+                  <td class="text-muted">in 6 days</td>
+                  <td><button class="ui-button ui-button--ghost ui-button--sm">Revoke</button></td>
+                </tr>
+                <tr>
+                  <td>marek@acme.io</td>
+                  <td><span class="ui-tag">member</span></td>
+                  <td><span class="ui-avatar">GV</span> Gabriel</td>
+                  <td class="text-muted">in 3 days</td>
+                  <td><button class="ui-button ui-button--ghost ui-button--sm">Revoke</button></td>
+                </tr>
+                <tr>
+                  <td>kai@acme.io</td>
+                  <td><span class="ui-tag">member</span></td>
+                  <td><span class="ui-avatar">GV</span> Gabriel</td>
+                  <td><span class="ui-tag ui-tag--danger">expired</span></td>
+                  <td><button class="ui-button ui-button--ghost ui-button--sm">Resend</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </figure>
+
+      <figure class="mockup mockup--hifi">
+        <figcaption>
+          <span><strong>Hi-fi</strong> &middot; Empty state (Phase 4 / INV-11)</span>
+          <span class="code-diff__meta">design-locked</span>
+        </figcaption>
+        <div class="mockup__body">
+          <div class="ui-card">
+            <div class="ui-empty-state">
+              <div class="ui-empty-state__icon">✉</div>
+              <h3 class="ui-empty-state__title">No pending invites</h3>
+              <p class="ui-empty-state__text">You haven't invited anyone yet. Send your first invite to start building a team.</p>
+              <button class="ui-button ui-button--primary">Invite first teammate</button>
+            </div>
+          </div>
+        </div>
+      </figure>
+    </section>
+    <!-- endregion:mockups -->
+
+    <!-- region:decisions -->
+    <section class="section" id="decisions">
+      <div class="section__header"><h2 class="section__title">Decision Log</h2></div>
+      <table class="log-table">
+        <thead>
+          <tr><th>Date</th><th>Decision</th><th>Rationale</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="log-table__date">2026-05-08</td>
+            <td>7-day token TTL</td>
+            <td>Long enough that invites don't expire while teammates are on PTO; short enough that stale invites don't accumulate.</td>
+          </tr>
+          <tr>
+            <td class="log-table__date">2026-05-09</td>
+            <td>Store <code>token_hash</code>, not the raw token</td>
+            <td>If the DB leaks, tokens cannot be replayed. Email sends the raw token; only the hash is persisted.</td>
+          </tr>
+          <tr>
+            <td class="log-table__date">2026-05-10</td>
+            <td>BullMQ over inline sending</td>
+            <td>Mail delivery shouldn't block the API response. Project already runs Redis + BullMQ for other jobs.</td>
+          </tr>
+          <tr>
+            <td class="log-table__date">2026-05-11</td>
+            <td>Empty state in v1</td>
+            <td>List exists from day one of the team feature; users will hit it with zero invites. Cheap to design upfront.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+    <!-- endregion:decisions -->
+
+    <!-- region:deviations -->
+    <section class="section" id="deviations">
+      <div class="section__header"><h2 class="section__title">Deviations</h2></div>
+      <table class="log-table">
+        <thead>
+          <tr><th>Task</th><th>Spec said</th><th>Actually did</th><th>Why</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>INV-02</code></td>
+            <td>Generate token with <code>randomBytes</code></td>
+            <td>Switched to <code>nanoid(32)</code></td>
+            <td>URL-safe out of the box; one fewer base-conversion step in the handler.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+    <!-- endregion:deviations -->
+
+  </main>
+</div>
+</body>
+</html>

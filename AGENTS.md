@@ -1,17 +1,20 @@
 # Repository Guidelines
 
+For architectural context across the Mint family (core vs TDD, distribution, evals), read and write to the **ngvoicu-sme** brain through kluris — `/kluris-ngvoicu-sme` (Claude Code skill: search, learn, remember, create) or `kluris search "<query>" --brain ngvoicu-sme` (CLI). Never edit brain files by hand.
+
 ## Project Structure & Module Organization
 - `.claude-plugin/`: plugin metadata for Claude Code distribution (`plugin.json`, `marketplace.json`).
 - `commands/`: one Markdown file per slash command (`forge.md`, `resume.md`, `pause.md`, `switch.md`, `list.md`, `status.md`, `openapi.md`).
 - `agents/researcher.md`: subagent prompt used for deep codebase research.
-- `references/spec-format.md`: canonical `SPEC.md` format and markers.
+- `references/spec-format.md`: canonical `SPEC.html` format reference (plus `html-template.html`, `edit-recipes.md`, `validate.md`, `wireframe-library.md`, `mockup-library.md`).
+- `examples/`: ground-truth `SPEC.html` exemplar + shared `spec-styles.css` and `spec-runtime.js` (these get copied into `.specs/assets/` on first forge).
 - `SKILL.md`: universal, cross-tool skill instructions (Codex, Cursor, Windsurf, Cline, Gemini CLI).
 - `.specs/`: local dogfooding output for specs (gitignored in this repo).
 
 ## Build, Test, and Development Commands
 - `rg --files`: fast inventory of repository files before editing.
 - `sed -n '1,160p' commands/forge.md`: inspect command content in terminal.
-- `npx skills add ngvoicu/specmint-core -g -a codex`: smoke-test skill installation flow.
+- `npx skills add ngvoicu/specmint-core-html -g -a codex`: smoke-test skill installation flow.
 - `git log --oneline -n 10`: review recent commit style before committing.
 
 This repository has no compile/build pipeline; Markdown and JSON are consumed directly by host tools.

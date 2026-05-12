@@ -1,5 +1,5 @@
 {
-  "name": "specmint-core",
+  "name": "specmint-core-html",
   "version": "2.0.0",
   "description": "Structured spec management for AI coding workflows. Replaces ephemeral plans with persistent, resumable specs built through deep research, iterative interviews, architecture diagrams, library comparisons, and comprehensive testing strategies.",
   "author": {

@@ -1,24 +1,25 @@
 ---
-name: specmint-core
+name: specmint-core-html
 description: >
-  Persistent spec management for AI coding workflows. Use this skill when the
-  user explicitly mentions specs, forging, or structured planning: says "forge",
-  "forge a spec", "write a spec for X", "create a spec", "plan X as a spec",
-  "resume", "what was I working on", "spec list/status/pause/switch/activate",
-  "implement the spec", "implement phase N", "implement all phases",
-  "generate openapi", or exits plan mode (offer to save as a spec). Also
-  trigger when a `.specs/` directory exists at session start. Do NOT trigger
-  on general feature requests, coding tasks, or questions that don't mention
-  specs or forging — those are normal coding tasks, not spec management.
+  Persistent spec management for AI coding workflows, producing rich HTML
+  SPEC.html files. Use this skill when the user explicitly mentions specs,
+  forging, or structured planning: says "forge", "forge a spec", "write a
+  spec for X", "create a spec", "plan X as a spec", "resume", "what was I
+  working on", "spec list/status/pause/switch/activate", "implement the
+  spec", "implement phase N", "implement all phases", "generate openapi",
+  or exits plan mode (offer to save as a spec). Also trigger when a `.specs/`
+  directory exists at session start. Do NOT trigger on general feature
+  requests, coding tasks, or questions that don't mention specs or forging.
 ---
 
-# Spec Mint Core
+# Spec Mint Core HTML
 
 Turn ephemeral plans into structured, persistent specs built through deep
-research and iterative interviews. Specs have phases, tasks, acceptance
-criteria, a registry, resume context, a decision log, and a deviations
-log. They live in `.specs/` at the project root and work with any AI
-coding tool that can read markdown.
+research and iterative interviews. Specs render as professional HTML
+documents — Mermaid diagrams, syntax-highlighted code diffs, UI mockups
+(wireframe and hi-fi), status pills, derived progress dashboards — and
+live in `.specs/` at the project root. They work with any AI coding tool
+that can read and edit HTML files.
 
 Whether `.specs/` is committed is repository policy. Respect `.gitignore`
 and the user's preference for tracked vs local-only spec state.
@@ -27,25 +28,29 @@ and the user's preference for tracked vs local-only spec state.
 
 1. **Single-file policy**: Keep this workflow in one `SKILL.md` file.
 2. **Canonical paths**:
-   - Registry: `.specs/registry.md`
-   - Per-spec files: `.specs/<id>/SPEC.md`, `.specs/<id>/research-*.md`,
+   - Registry: `.specs/registry.md` (markdown, denormalized index)
+   - Shared assets: `.specs/assets/spec-styles.css` + `.specs/assets/spec-runtime.js`
+   - Per-spec files: `.specs/<id>/SPEC.html`, `.specs/<id>/research-*.md`,
      `.specs/<id>/interview-*.md`
-3. **Authority rule**: `SPEC.md` frontmatter is authoritative. Registry is a
-   denormalized index for quick lookup.
+3. **Authority rule**: The `<script id="spec-meta">` JSON inside `SPEC.html`
+   is authoritative for identity. The `data-status` attributes on tasks /
+   phases / acceptance criteria are authoritative for lifecycle. The
+   registry is a denormalized index for quick lookup.
 4. **Active-spec rule**: Target exactly one active spec at a time.
 5. **Parser policy**: Use best-effort parsing with clear warnings and repair
    guidance instead of hard failure on malformed rows.
 6. **Progress tracking is sacred**: After completing any task, immediately
-   update SPEC.md (checkbox, `← current` marker, phase marker) AND
-   registry.md (progress count, date). Then re-read both files to verify
-   the edits landed correctly. Never move to the next task without updating
-   both files. Never end a session with the registry out of sync with
-   SPEC.md. This is non-negotiable — if you do nothing else, do this.
+   update `SPEC.html` (`data-status` swap and any phase transition) AND
+   `registry.md` (progress count, date). Run the validate recipe (see
+   `references/validate.md`) to confirm the file still parses. Re-read both
+   files to verify the edits landed. Never move to the next task without
+   updating both files. Never end a session with the registry out of sync
+   with the derived progress in `SPEC.html`. This is non-negotiable.
 
 ## Claude Code Plugin
 
-If running as a Claude Code plugin, slash commands like `/specmint-core:forge`,
-`/specmint-core:resume`, `/specmint-core:pause` etc. are available. See the
+If running as a Claude Code plugin, slash commands like `/specmint-core-html:forge`,
+`/specmint-core-html:resume`, `/specmint-core-html:pause` etc. are available. See the
 plugin's `commands/` directory for the full set. The `/forge` command
 replaces plan mode with deep research, iterative interviews, and spec
 writing.
@@ -61,15 +66,24 @@ instead of reading files. Otherwise, fall back to reading files manually:
    Say 'resume' to pick up where you left off."
 3. Don't force it — the user might want to do something else first
 
+## Coexistence with markdown specs
+
+This plugin only manages `.html` specs. If `.specs/<id>/SPEC.md` files exist
+(from a markdown-flavored Spec Mint variant), they are not visible to or
+operated on by this plugin. No auto-conversion, no edits. The user should
+use the markdown-flavored variant for those specs.
+
 ## Deterministic Edge Cases (Best-Effort)
 
 | Situation | Required behavior |
 |-----------|-------------------|
 | `.specs/registry.md` missing | If `.specs/` exists, report "No registry yet" and offer to initialize it. If `.specs/` is missing, report "No specs yet" and continue normally. |
+| `.specs/assets/` missing when a SPEC.html is being written | Initialize it — copy `spec-styles.css` and `spec-runtime.js` from the plugin's `examples/` directory (or the equivalent location your tool uses for skill files). |
 | Malformed registry row | Skip malformed row, emit warning with row text, continue parsing remaining rows. |
-| Multiple `active` rows | Warn user. Pick the row with the newest `Updated` date (or first active row if dates are unavailable) for this run. On next write, normalize to a single active spec. |
-| Registry row exists but `.specs/<id>/SPEC.md` missing | Warn and continue. Keep row visible in list/status with `(SPEC.md missing)`. |
-| Registry and SPEC conflict | Trust `SPEC.md`, then repair registry values on next write. |
+| Multiple `active` rows | Warn user. Pick the row with the newest `Updated` date for this run. On next write, normalize to a single active spec. |
+| Registry row exists but `.specs/<id>/SPEC.html` missing | Warn and continue. Keep row visible in list/status with `(SPEC.html missing)`. |
+| Registry and SPEC conflict | Trust `SPEC.html`, then repair registry values on next write. |
+| Validate recipe fails after an edit | Stop. Fix the broken JSON or sentinel pair before continuing. |
 | No active spec | List available specs and ask which to activate or resume. |
 
 ## Working on a Spec
@@ -79,48 +93,56 @@ instead of reading files. Otherwise, fall back to reading files manually:
 When the user says "resume", "what was I working on", or similar:
 
 1. Read `.specs/registry.md` — find the spec with `active` status. If none, list specs and ask which to resume
-2. Load `.specs/<id>/SPEC.md`
+2. Load `.specs/<id>/SPEC.html`
 3. Parse progress:
-   - Count completed `[x]` vs total tasks per phase
-   - Find current phase (first `[in-progress]` phase)
-   - Find current task (`← current` marker, or first unchecked in current phase)
-4. Read the **Resume Context** section
-5. Present a compact summary:
+   - Count `<li class="task">` elements grouped by `data-status` per phase
+   - Find current phase (first `<details class="phase">` with `data-status="in-progress"`)
+   - Find current task (first task in current phase with `data-status="pending"`)
+4. Present a compact summary:
 
    ```
    Resuming: User Auth System
    Progress: 5/12 tasks (Phase 2: OAuth Integration)
    Current: Implement Google OAuth callback handler
-   Context: Token exchange is working. Need to handle the callback
-   URL parsing and store refresh tokens in the user model.
-   Next file: src/auth/oauth/google.ts
    ```
 
-6. Begin working on the current task — don't wait for permission
+5. Begin working on the current task — don't wait for permission
+
+There is no separate "Resume Context" section in HTML specs. The first
+pending task in the current phase is implicitly the next task. Decision
+Log and Deviations carry the context history.
 
 ### Implementing
 
-**After completing each task, immediately edit the SPEC.md file** to record
-progress. Do not wait until the end of a session or until asked — update the
-spec as you go. This is sacred (see Critical Invariant #6).
+**After completing each task, immediately edit `SPEC.html`** to record
+progress. Do not wait until the end of a session or until asked — update
+the spec as you go. This is sacred (see Critical Invariant #6).
 
-1. Check off the completed task: `- [ ]` -> `- [x]`
-2. Move `← current` to the next unchecked task
-3. When all tasks in a phase are done:
-   - Phase status: `[in-progress]` -> `[completed]`
-   - Next phase: `[pending]` -> `[in-progress]`
-   - Review Acceptance Criteria — check off any that are now satisfied
-4. Update the `updated` date in YAML frontmatter
+1. Change the task's `data-status="pending"` → `data-status="completed"`
+2. When all tasks in a phase are done:
+   - Phase `data-status="in-progress"` → `data-status="completed"`
+   - Update the phase pill (`pill--in-progress` → `pill--completed`)
+   - Next phase `data-status="pending"` → `data-status="in-progress"`
+   - Update its pill correspondingly
+   - Review Acceptance Criteria — update `data-status` on any that are now satisfied
+3. Update the `"updated"` field in the `<script id="spec-meta">` JSON
+4. Update the visible `<dd>` for "Updated" in the spec header dl
 5. Update progress (`X/Y`) and `updated` date in `.specs/registry.md`
 
+See `references/edit-recipes.md` for the exact before/after snippets for
+every operation.
+
 **Update transaction (required order — never skip steps):**
-1. Edit `SPEC.md` (checkbox, current marker, phase marker, resume context).
-2. Recompute progress directly from `SPEC.md` checkboxes.
-3. Edit the matching registry row (status, progress, updated date).
-4. **Verify**: Re-read both `SPEC.md` and `registry.md` to confirm the
-   edits are correct. If the registry progress doesn't match the SPEC.md
-   checkbox count, fix it now.
-5. If registry update fails, keep `SPEC.md` as source of truth and emit a
+1. Edit `SPEC.html` (task `data-status`, phase transitions if applicable,
+   updated date in JSON and visible dl).
+2. **Run the validate recipe** from `references/validate.md`. If it doesn't
+   print `OK`, fix the broken JSON or sentinel before continuing.
+3. Recompute progress directly from `SPEC.html` `data-status` counts.
+4. Edit the matching registry row (status, progress, updated date).
+5. **Verify**: Re-read both `SPEC.html` and `registry.md` to confirm the
+   edits are correct. If the registry progress doesn't match the SPEC.html
+   completed-task count, fix it now.
+6. If registry update fails, keep `SPEC.html` as source of truth and emit a
    warning with exact repair action for `.specs/registry.md`.
 
 **If you notice you forgot to update after a previous task, stop what
@@ -130,7 +152,6 @@ registry useless.
 
 Also:
 - If a task is more complex than expected, split it into subtasks
-- Update resume context at natural pauses
 - Log non-obvious technical decisions to the Decision Log
 - If implementation diverges from the spec (errors found, better approach
   discovered, assumptions proved wrong), log it in the **Deviations** section
@@ -140,32 +161,31 @@ Also:
 When the user says "pause", switches specs, or a session is ending:
 
 0. If there is no active spec, report that there is nothing to pause and stop.
-1. Capture what was happening:
-   - Which task was in progress
-   - What files were being modified (paths, function names)
-   - Key decisions made this session
-   - Any blockers or open questions
-2. Write this to the **Resume Context** section in SPEC.md
-3. Update checkboxes to reflect actual progress
-4. Move `← current` marker to the right task
-5. Add any session decisions to the **Decision Log**
-6. Update `status: paused` in frontmatter
-7. Update the `updated` date
+1. Make sure all completed work is reflected in the spec — every task you
+   actually finished has `data-status="completed"`, every phase transition
+   is applied.
+2. Add any session decisions to the **Decision Log**
+3. Change the spec status from `active` to `paused`:
+   - In the `<script id="spec-meta">` JSON: `"status":"paused"`
+   - In the visible status pill: `pill--in-progress`/`Active` → `pill--pending`/`Paused`
+4. Update the `"updated"` date (in JSON + visible dl)
+5. Mirror status + date to `.specs/registry.md`
+6. Run the validate recipe
 
-**Resume Context is the most important part of pausing.** Write it as if
-briefing a colleague who will pick up tomorrow. Include specific file paths,
-function names, and the exact next step. Vague context like "was working on
-auth" is useless — write "implementing `verifyRefreshToken()` in
-`src/auth/tokens.ts`, the JWT verification works but refresh rotation isn't
-hooked up to the `/auth/refresh` endpoint yet."
+**Known limitation: HTML specs checkpoint state at task boundaries only.**
+Mid-task partial state (e.g., "I refactored handleSubmit, success path
+works, debugging 4xx") is not captured by the spec format. If you need to
+pause mid-task, finish the task or split it into subtasks first. The
+Decision Log can carry brief in-flight notes but is not designed as a
+running scratchpad — keep it to durable decisions.
 
 ### Switching Between Specs
 
 1. Validate the target spec ID first. If missing, list available specs.
-2. Confirm `.specs/<target-id>/SPEC.md` exists. If not, stop with an error.
+2. Confirm `.specs/<target-id>/SPEC.html` exists. If not, stop with an error.
 3. If target is already active, report and stop.
 4. Pause the current active spec if one exists (full pause workflow).
-5. Set target status to `active` in frontmatter and in `.specs/registry.md`.
+5. Set target status to `active` in JSON metadata and in `.specs/registry.md`.
 6. Resume the target spec (full resume workflow).
 
 ## Command Ownership Map
@@ -176,65 +196,40 @@ hooked up to the `/auth/refresh` endpoint yet."
 - If there is a conflict, preserve `Critical Invariants` from this file and
   apply command-specific behavior only where it does not violate invariants.
 
-## Spec Format
+## Spec Format (HTML)
 
-### Frontmatter
+The detailed format reference lives in `references/spec-format.md`. The
+canonical empty template is `references/html-template.html`. Edit recipes
+for every common operation are in `references/edit-recipes.md`. Wireframe
+and hi-fi mockup component patterns are in `references/wireframe-library.md`
+and `references/mockup-library.md`. The post-edit validator is in
+`references/validate.md`.
 
-YAML frontmatter with: `id`, `title`, `status`, `created`, `updated`,
-optional `priority` and `tags`.
+**Key facts about the format:**
 
-Status values: `active`, `paused`, `completed`, `archived`
-
-### Phase Markers
-
-`[pending]`, `[in-progress]`, `[completed]`, `[blocked]`
-
-### Task Markers
-
-- `- [ ] [CODE-01]` unchecked, `- [x] [CODE-01]` done
-- Task codes: `<PREFIX>-<NN>` — prefix is a short (2-4 letter) uppercase
-  abbreviation of the spec (e.g., `user-auth-system` → `AUTH`). Numbers
-  auto-increment across all phases starting at `01`
-- `← current` after the task text marks the active task
-- `[NEEDS CLARIFICATION]` after the task code on unclear tasks
-
-### Acceptance Criteria
-
-Testable conditions that define when the spec is "done". Written during
-forge, verified after each phase completes. Format: checkboxes with
-specific, verifiable statements — not vague goals.
-
-```markdown
-## Acceptance Criteria
-
-- [ ] Users can sign in with Google OAuth and receive a JWT
-- [ ] Expired tokens return 401 with `{"error": "token_expired"}`
-- [ ] Refresh tokens rotate on each use (old token is invalidated)
-- [ ] Rate limiting returns 429 after 100 requests per minute
-```
-
-Check off criteria as they are satisfied during implementation. At phase
-completion, review which acceptance criteria are now met. At spec
-completion, all criteria must be checked — if any remain unchecked, the
-spec is not done.
-
-### Resume Context
-
-Blockquote section with specific file paths, function names, and exact
-next step. This is what makes cross-session continuity work.
-
-### Decision Log
-
-Markdown table with date, decision, and rationale columns. Log non-obvious
-technical choices (library selection, architecture pattern, API design).
-
-### Deviations
-
-Markdown table tracking where implementation diverged from the spec:
-task, what the spec said, what was actually done, and why. Only log
-changes that would surprise someone comparing the spec to the code.
-
-See `references/spec-format.md` for the full SPEC.md template.
+- Each `SPEC.html` references `../assets/spec-styles.css` and
+  `../assets/spec-runtime.js`. Those two files are written once per project
+  on first forge and are shared by every spec.
+- Identity (`id`, `title`, `status`, `created`, `updated`, `priority`,
+  `tags`, `mockup-fidelity`) lives in a `<script type="application/json"
+  id="spec-meta">` blob in `<head>`, single-line JSON, canonical key order
+  (`id`, `title`, `status`, `created`, `updated`, `priority`, `tags`,
+  `mockup-fidelity` — logical, not alphabetical).
+- Lifecycle state (task status, phase status, AC status) lives in
+  `data-status` attributes. Values: `pending`, `in-progress`, `completed`,
+  `blocked`. AC items use only `pending` / `completed`.
+- Progress strings ("3/12 tasks", "Phase 2 of 4", "33%") are **never
+  authored** — they are computed at page load by `spec-runtime.js` from
+  `data-status` counts. Any `<span data-progress-target="...">` will be
+  overwritten on render.
+- Every top-level section is wrapped in `<!-- region:NAME -->` /
+  `<!-- endregion:NAME -->` sentinels. Use them as anchors when editing.
+- Task codes: `<PREFIX>-<NN>` where prefix is a 2-4 letter uppercase
+  abbreviation of the spec ID; numbers auto-increment across all phases
+  starting at 01.
+- All phases render `open` by default (`<details class="phase" open ...>`).
+  No "current task" marker — the first pending task in the active phase
+  is implicitly current.
 
 ## Forging Specs
 
@@ -243,19 +238,19 @@ full forge workflow: setup, research deeply, interview the user, iterate
 until clear, then write the spec.
 
 If the environment is in read-only plan mode, do not run forge in that mode.
-Ask the user to exit plan mode (Shift+Tab) and rerun `/specmint-core:forge`.
+Ask the user to exit plan mode (Shift+Tab) and rerun `/specmint-core-html:forge`.
 
 **The forge workflow never produces application code.** Its outputs are only
-`.specs/` files: research notes, interview notes, and the SPEC.md. If the
-user says "write a spec", that means write a SPEC.md — not implement the
-feature. Implementation happens separately, after the user reviews and
-approves the spec.
+`.specs/` files: research notes, interview notes, the assets directory if
+missing, and the SPEC.html. If the user says "write a spec", that means
+write a SPEC.html — not implement the feature. Implementation happens
+separately, after the user reviews and approves the spec.
 
 ### Step 1: Setup
 
 1. Generate a spec ID from the title (lowercase, hyphenated):
    `"User Auth System"` -> `user-auth-system`
-2. **Collision check**: If `.specs/<id>/SPEC.md` already exists or the ID
+2. **Collision check**: If `.specs/<id>/SPEC.html` already exists or the ID
    appears in `.specs/registry.md`, warn the user and ask:
    - **Resume** the existing spec
    - **Rename** the new spec (suggest `<id>-v2` or ask for a new title)
@@ -263,9 +258,15 @@ approves the spec.
    Do not proceed until the user chooses.
 3. Initialize directories:
    ```bash
-   mkdir -p .specs/<id>
+   mkdir -p .specs/<id> .specs/assets
    ```
-4. If `.specs/registry.md` doesn't exist, initialize it:
+4. **Initialize the shared assets if they don't already exist.** Copy
+   `spec-styles.css` and `spec-runtime.js` from the plugin's bundled
+   examples directory into `.specs/assets/`. AI tools should know the
+   plugin install location; for Claude Code plugins it is typically
+   `~/.claude/plugins/specmint-core-html/examples/`. These files are
+   written once and shared by every spec in the project.
+5. If `.specs/registry.md` doesn't exist, initialize it:
    ```markdown
    # Spec Registry
 
@@ -283,7 +284,7 @@ Research runs on two parallel tracks to maximize thoroughness and speed:
 
 #### Track A: Spawn the Researcher Agent
 
-**Always spawn the `specmint-core:researcher` agent** for codebase + internet
+**Always spawn the `specmint-core-html:researcher` agent** for codebase + internet
 research. Don't skip this — the researcher is purpose-built for exhaustive
 multi-source analysis and runs in parallel so it doesn't slow down the
 workflow.
@@ -346,6 +347,11 @@ should inform specific questions, not generic ones.
    - User-facing behavior ("What should happen when X fails?")
    - Acceptance criteria ("What does 'done' look like? Any specific
      conditions that must be true when this is complete?")
+   - **Mockup fidelity (only if UI work is in scope)** — "Mockups in this
+     spec should render as `wireframe` (clean grayscale boxes, structural,
+     no design commitment), `hi-fi` (real-looking polished components),
+     or `none` (prose + diagrams are enough)?" Record the answer for use
+     in Step 5.
 4. **Propose a rough approach** and ask for reactions
 
 **STOP after presenting questions.** Wait for the user to answer before
@@ -377,49 +383,52 @@ Two rounds is typical. Don't rush it — but don't drag it out either.
 ### Step 5: Write the Spec
 
 Synthesize all research notes, interview answers, and decisions into a
-comprehensive SPEC.md. See `references/spec-format.md` for the full template.
+comprehensive `SPEC.html`. **Start from `references/html-template.html`** —
+copy it to `.specs/<id>/SPEC.html` and fill in every placeholder. Use
+`references/edit-recipes.md` for the exact HTML structure of each common
+element (tasks, AC items, diagrams, code-diff figures, mockups, log
+rows).
 
-The spec should be thorough and detailed — someone reading it should be able
-to implement the feature without guessing. Include:
+The spec should be thorough and detailed — someone reading it should be
+able to implement the feature without guessing. Include:
 
-- YAML frontmatter (id, title, status, created, updated, priority, tags)
-- Overview (2-4 sentences — what's being built and why)
-- **Acceptance Criteria** — Testable conditions defining "done". Checkbox
-  format so they can be checked off during implementation. Each criterion
-  should be specific and verifiable, not vague ("works correctly").
-- **Architecture Diagram** — ASCII art or Mermaid diagram showing the system
-  architecture, data flow, or component relationships. Every non-trivial spec
-  should have at least one diagram. Use ASCII for simple flows, Mermaid for
-  complex relationships.
-- **Library Choices** — Table comparing evaluated libraries with the selected
-  pick and rationale. Include version numbers.
-- Phases with status markers (3-6 phases is typical)
-- Tasks as markdown checkboxes with task codes (`[PREFIX-NN]`) — be specific:
-  include file paths, function names, and expected behavior
-- **Testing Strategy** — Comprehensive testing plan: unit tests, integration
-  tests, e2e tests, edge case tests. Specify which testing frameworks to use
-  and what test files to create. Every feature task should have a corresponding
-  test task.
-- Resume Context section (blockquote)
-- Decision Log with non-obvious technical choices from the interviews
-- Deviations table (empty — filled during implementation)
+- **`<script id="spec-meta">` JSON** (id, title, status, created, updated,
+  priority, tags, mockup-fidelity)
+- **Spec header** — title, status pill, priority chip, dates, tags, scorecard
+- **Overview** (2-4 sentences — what's being built and why)
+- **Acceptance Criteria** — Testable conditions defining "done", each in a
+  `<li class="ac-item" data-status="pending">`. Specific and verifiable,
+  not vague. Use `<span class="ac-flag">Needs clarification</span>` for
+  unresolved questions.
+- **Architecture Diagram(s)** — Mermaid `flowchart`, `sequenceDiagram`,
+  `erDiagram`, `stateDiagram-v2`, etc. Every non-trivial spec should have
+  at least one diagram. Mermaid covers every diagram type we need.
+- **Library Choices** — `<table class="table">` comparing evaluated
+  libraries with the selected pick and rationale. Include version numbers.
+- **Phases & Tasks** — 3-6 phases is typical. Each phase is a
+  `<details class="phase" open>` with status pill, progress strip, and a
+  `<ul class="task-list">`. Tasks are concrete and actionable (file paths,
+  function names, expected behavior).
+- **Code Previews** (optional) — `<figure class="code-diff">` blocks for
+  illustrative changes. Unified by default; side-by-side via
+  `data-view="split"` for >30 line changes or multi-hunk.
+- **UI Mockups** — One or more `<figure class="mockup">` blocks, using
+  wireframe (`mockup--wireframe`) or hi-fi (`mockup--hifi`) per the
+  fidelity decided in the interview. Compose with `.wf-*` or `.ui-*`
+  components from the corresponding library reference. Omit entirely if
+  `mockup-fidelity: none`.
+- **Decision Log** — Empty initially; populated as work progresses.
+- **Deviations** — Empty initially; populated during implementation when
+  behavior diverges from the spec.
 
 **Diagram guidelines:**
-- Use ASCII art for simple request flows and data pipelines:
-  ```
-  Client → API Gateway → Auth Middleware → Route Handler → Database
-                                              ↓
-                                         Cache Layer
-  ```
-- Use Mermaid for complex architecture, state machines, and ER diagrams:
-  ```mermaid
-  graph TD
-    A[Client] --> B[API Gateway]
-    B --> C{Auth?}
-    C -->|Yes| D[Handler]
-    C -->|No| E[401]
-  ```
-- Include at least one diagram per spec (architecture, data flow, or state)
+- Mermaid is the recommended path for every diagram type. The plugin loads
+  Mermaid v11 from a CDN automatically when a `<pre class="mermaid">`
+  block exists on the page.
+- Use the right diagram type: `flowchart` for system flows, `sequenceDiagram`
+  for request lifecycles, `erDiagram` for data models, `stateDiagram-v2`
+  for state machines, etc.
+- Include at least one diagram per spec (architecture, data flow, or state).
 
 **Solution quality standards:**
 - Proposed solutions should be simple, maintainable, and professional
@@ -435,37 +444,40 @@ to implement the feature without guessing. Include:
    work from a later phase
 3. Verify every task is concrete and actionable (file paths, function names)
 4. Confirm the architecture diagram matches the task descriptions
-5. Check that the testing strategy covers all feature tasks
-6. Verify library choices are consistent throughout (no conflicting picks)
-7. Ensure the overview accurately summarizes what the phases will deliver
-8. Look for gaps — is there anything the implementation would need that
+5. Verify library choices are consistent throughout (no conflicting picks)
+6. Ensure the overview accurately summarizes what the phases will deliver
+7. Look for gaps — is there anything the implementation would need that
    isn't covered by a task?
-9. Verify acceptance criteria are specific, testable, and cover the key
+8. Verify acceptance criteria are specific, testable, and cover the key
    behaviors the user expects
-10. **Placeholder check**: Search the spec for "TBD", "TODO", "placeholder",
-    "TBC", "to be determined", "will be decided", "figure out" — replace
-    every instance with a concrete decision or remove the section
-11. **Internal consistency**: Verify task count in overview matches actual
+9. **Placeholder check**: Search the spec for "TBD", "TODO", "placeholder",
+   "TBC", "to be determined", "will be decided", "figure out" — replace
+   every instance with a concrete decision or remove the section
+10. **Internal consistency**: Verify task count in scorecard matches actual
     tasks, all task code references are valid, library versions in different
     sections don't conflict
-12. **Scope check**: Compare the spec against the interview answers — does
+11. **Scope check**: Compare the spec against the interview answers — does
     it deliver what was discussed? Nothing more, nothing less?
-13. **Ambiguity check**: For each task, ask "could an implementer complete
+12. **Ambiguity check**: For each task, ask "could an implementer complete
     this without asking me a question?" If no, add detail until yes.
+13. **Run the validate recipe** — confirm the file parses cleanly.
 
-Save to `.specs/<id>/SPEC.md`. Update `.specs/registry.md` — set
-status to `active`.
+Save to `.specs/<id>/SPEC.html`. Update `.specs/registry.md` — set
+status to `active`. Run the validate recipe one more time before
+presenting.
 
-**Present the spec and wait for approval.** Show the user the complete spec
-and ask: "Does this look right? Want to adjust anything before we start?"
-Do not begin implementing until the user explicitly approves. The forge
-workflow produces only spec files (SPEC.md, research-*.md, interview-*.md) —
-never application code. Implementation starts only after the user approves
-the spec and says to proceed.
+**Present the spec and wait for approval.** Show the user the complete
+spec (or open it in a browser if applicable) and ask: "Does this look
+right? Want to adjust anything before we start?" Do not begin implementing
+until the user explicitly approves. The forge workflow produces only spec
+files (SPEC.html, research-*.md, interview-*.md) — never application code.
+Implementation starts only after the user approves the spec and says to
+proceed.
 
 **Phase/task guidelines:**
-- Mark Phase 1 as `[in-progress]`, the rest as `[pending]`
-- Mark the first unchecked task with `← current`
+- Mark Phase 1 with `data-status="in-progress"` and the matching pill, the
+  rest with `data-status="pending"`
+- Every phase renders `open` — `<details class="phase" open ...>`
 
 ## Implementing a Spec
 
@@ -475,39 +487,41 @@ phases", or similar:
 ### Scope Detection
 
 Parse the user's request to determine scope:
-- **"implement the spec"** or **"implement"** → Start from the current task
-  (the `← current` marker) and work forward
+- **"implement the spec"** or **"implement"** → Start from the first task
+  with `data-status="pending"` in the in-progress phase and work forward
 - **"implement phase N"** or **"implement phase <name>"** → Implement all
   tasks in that specific phase
 - **"implement all phases"** or **"implement everything"** → Implement all
-  remaining unchecked tasks across all phases, in order
+  remaining pending tasks across all phases, in order
 
 ### Implementation Flow
 
 1. Read `.specs/registry.md` to find the active spec
-2. Load `.specs/<id>/SPEC.md` and parse phases/tasks
+2. Load `.specs/<id>/SPEC.html` and parse phases/tasks (look at `data-status`
+   on each `<li class="task">`)
 3. Identify the target tasks based on scope
 4. For each task, in order:
-   a. Mark it with `← current`
-   b. Implement it — write the actual code
-   c. Check it off: `- [ ]` → `- [x]`
-   d. Remove the `← current` marker
-   e. When all tasks in a phase complete:
-      - Phase status: `[in-progress]` → `[completed]`
-      - Next phase: `[pending]` → `[in-progress]`
-   f. Update `updated` date in frontmatter
-   g. Update progress and date in `.specs/registry.md`
-5. After each task completion, update Resume Context with current state
-6. Log any new decisions to the Decision Log
-7. If implementation diverges from the spec, log it in the Deviations section
-8. **Phase review**: When all tasks in a phase are done, review before
+   a. Implement it — write the actual code
+   b. Edit `SPEC.html`: change the task's `data-status="pending"` →
+      `data-status="completed"` (see `references/edit-recipes.md` for the
+      exact swap)
+   c. When all tasks in a phase complete:
+      - Update phase `data-status` and pill class
+      - Promote next phase to `in-progress`
+   d. Update `"updated"` date in JSON + visible dl
+   e. Update progress and date in `.specs/registry.md`
+   f. **Run the validate recipe** from `references/validate.md`
+5. Log any new decisions to the Decision Log
+6. If implementation diverges from the spec, log it in the Deviations section
+7. **Phase review**: When all tasks in a phase are done, review before
    moving on — re-read the phase's tasks and acceptance criteria, verify
    each task's implementation matches what was specified, and check for
    missing edge cases or spec drift. Fix issues before marking the phase
    complete. Log findings in the Decision Log.
-9. If blocked on a task:
-   - Keep the task unchecked and record blocker details in Resume Context
-   - Set phase marker `[blocked]` only when the whole phase is blocked
+8. If blocked on a task:
+   - Set `data-status="blocked"` on the task
+   - Record blocker details in the Decision Log (or add a Deviations row)
+   - Set the phase to `blocked` only when the whole phase is blocked
    - Continue with another unblocked task only if sequencing allows it
 
 ### Testing During Implementation
@@ -533,11 +547,13 @@ completion boundaries.
 
 When all tasks are done:
 - **Run the full test suite** and show the output (verification gate)
-- Verify all Acceptance Criteria are checked off. If any remain unchecked,
-  report which ones and ask the user before marking the spec complete.
-- Set all phases to `[completed]`
-- Set spec status to `completed` in frontmatter and registry
+- Verify all Acceptance Criteria have `data-status="completed"`. If any
+  remain pending, report which ones and ask the user before marking the
+  spec complete.
+- Set all phase `data-status="completed"`
+- Set spec status to `completed` in JSON metadata and registry
 - Update the `updated` date
+- Run the validate recipe
 - Present a summary of what was implemented
 - Suggest next spec to activate if any are paused
 
@@ -558,13 +574,15 @@ When the user says "generate openapi", "update api docs", or similar:
 6. Report totals: endpoints, schemas, security schemes, and manual-review
    candidates.
 
+(OpenAPI output stays as YAML + markdown — only the spec files are HTML.)
+
 ## Before Session Ends
 
 If the session is ending:
 
 1. Pause the active spec (run full pause workflow)
-2. Write detailed resume context
-3. Confirm to the user that context was saved
+2. Make sure every completed task has the right `data-status`
+3. Confirm to the user that progress was saved
 
 ## Directory Layout
 
@@ -572,11 +590,14 @@ All state lives in `.specs/` at the project root:
 
 ```
 .specs/
-├── registry.md               # Denormalized index for status/progress lookups
+├── assets/
+│   ├── spec-styles.css       # Shared design system (written once)
+│   └── spec-runtime.js       # Shared runtime (written once)
+├── registry.md               # Markdown table — denormalized index
 └── <spec-id>/
-    ├── SPEC.md               # The spec document
-    ├── research-01.md        # Deep research findings
-    ├── interview-01.md       # Interview notes
+    ├── SPEC.html             # The spec document
+    ├── research-01.md        # Deep research findings (markdown)
+    ├── interview-01.md       # Interview notes (markdown)
     └── ...
 ```
 
@@ -593,10 +614,10 @@ All state lives in `.specs/` at the project root:
 | api-refactor | API Refactoring | paused | medium | 2/8 | 2026-02-09 |
 ```
 
-**SPEC.md frontmatter is authoritative.** The registry is a denormalized
-index for quick lookups. Always update both together — when you change
-status, progress, or dates in SPEC.md, immediately mirror those changes
-in the registry. If they ever conflict, SPEC.md wins.
+**SPEC.html `<script id="spec-meta">` is authoritative.** The registry is
+a denormalized index for quick lookups. Always update both together —
+when you change status or progress in the SPEC.html, immediately mirror
+those changes in the registry. If they ever conflict, SPEC.html wins.
 
 ## Listing Specs
 
@@ -623,7 +644,6 @@ Resuming: <Title> (<id>)
 Progress: <done>/<total> tasks
 Phase: <phase name>
 Current: <task text>
-Context: <one to three lines from Resume Context>
 ```
 
 **List**
@@ -647,18 +667,19 @@ Current: <task text or none>
 
 ## Completing a Spec
 
-1. Verify all tasks are checked (warn if not, but allow override)
-2. Set status to `completed` in frontmatter and registry
+1. Verify all tasks have `data-status="completed"` (warn if not, but allow override)
+2. Set status to `completed` in JSON metadata and registry
 3. Update the `updated` date in both
-4. Suggest next spec to activate if any are paused
+4. Run validate recipe
+5. Suggest next spec to activate if any are paused
 
 ## Archiving a Spec
 
 Archive completed specs to keep the registry clean:
 
-1. Set status to `archived` in frontmatter and registry
-2. Research files (research-*.md, interview-*.md) in `.specs/<id>/` can optionally be deleted
-   (the SPEC.md has all the decisions and context)
+1. Set status to `archived` in JSON metadata and registry
+2. Research files (research-*.md, interview-*.md) in `.specs/<id>/` can
+   optionally be deleted (the SPEC.html has all the decisions and context)
 
 Specs can be archived from `completed` or `paused` status. To reactivate
 an archived spec, set its status back to `active`.
@@ -667,30 +688,31 @@ an archived spec, set its status back to `active`.
 
 To remove a spec entirely:
 
-1. Delete `.specs/<id>/` (contains SPEC.md, research notes, interviews)
+1. Delete `.specs/<id>/` (contains SPEC.html, research notes, interviews)
 2. Remove the row from `.specs/registry.md`
 
 This is irreversible — consider archiving instead if you might need it later.
 
 ## Cross-Tool Compatibility
 
-The spec format is pure markdown with YAML frontmatter. Any tool that can
+`SPEC.html` is plain HTML with a JSON metadata blob; any tool that can
 read and write files can use these specs:
 
 - **Claude Code**: Full plugin support or skill via `npx skills add`
 - **Codex**: Snippet in AGENTS.md or skill via `npx skills add`
 - **Cursor / Windsurf / Cline**: Snippet in rules file
 - **Gemini CLI**: Snippet in GEMINI.md
-- **Humans**: Readable and editable in any text editor
-- **Git**: Diffs cleanly, easy to track in version control
+- **Humans**: Open `.html` in any browser; edit in any text editor
+- **Git**: Diffs cleanly with the conventions in `references/spec-format.md`
+  (one attribute per line, sentinel comments, sorted JSON keys)
 
-To configure another tool, run `npx skills add ngvoicu/specmint-core -g -a <tool>`.
+To configure another tool, run `npx skills add ngvoicu/specmint-core-html -g -a <tool>`.
 
 ## Behavioral Notes
 
 **Be proactive about spec management.** If you notice the user has been
 working for a while and made progress, update the spec without being asked.
-If a session is ending, offer to pause and save context.
+If a session is ending, offer to pause and save progress.
 
 **Specs should evolve.** It's fine to add tasks, reorder phases, or split a
 phase into two as understanding deepens. Specs aren't contracts — they're
@@ -707,3 +729,7 @@ Keep it lean enough to parse and act on in one read.
 **Respect the user's flow.** Don't interrupt deep coding work to update
 the spec. Batch updates for natural pauses — task completion, phase
 transitions, or session boundaries.
+
+**Never hand-author derived progress strings.** Any `<span data-progress-target="...">`
+content gets overwritten by `spec-runtime.js`. Leave a placeholder like
+"0/0" and let the runtime fill it in.

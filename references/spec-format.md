@@ -1,421 +1,180 @@
-# SPEC.md Format Reference
+# SPEC.html Format Reference
 
-This is the complete format specification for spec documents. Use this as
-the template when creating new specs.
+The complete format specification for HTML spec documents. Use this as the canonical reference when creating or editing specs. The empty template is in `html-template.html`; surgical edit operations are in `edit-recipes.md`.
 
-## Full Template
+## File layout
 
-```markdown
----
-id: <spec-id>
-title: <Human Readable Title>
-status: active | paused | completed | archived
-created: <YYYY-MM-DD>
-updated: <YYYY-MM-DD>
-priority: high | medium | low
-tags: [<tag1>, <tag2>]
----
-
-# <Title>
-
-## Overview
-
-<2-4 sentences describing what this spec accomplishes and why. Include
-enough context that someone resuming cold can understand the goal without
-reading the full conversation history.>
-
-## Acceptance Criteria
-
-- [ ] <When X happens, the system does Y>
-- [ ] <The Z component returns W with status code N>
-- [ ] <Users can perform action A and see result B>
-- [ ] [NEEDS CLARIFICATION] <Ambiguous criterion that needs discussion>
-
-Testable conditions that define when the spec is "done". Each criterion
-is a checkbox — checked off during implementation as it becomes satisfied.
-Be specific and verifiable: "returns 401 with error body" not "handles
-errors correctly". At spec completion, all criteria must be checked.
-Skip for trivial bug fixes, but features always need them — they prevent
-scope creep and make verification unambiguous.
-
-## Architecture
-
-<Include at least one diagram showing the system design. Use ASCII art for
-simple flows and Mermaid for complex relationships.>
-
-### System Diagram
+Every project that uses this plugin has a `.specs/` directory at the project root:
 
 ```
-Client → API Gateway → Auth Middleware → Route Handler → Database
-                                            ↓
-                                       Cache Layer
+.specs/
+├── assets/
+│   ├── spec-styles.css        # Written once on first forge
+│   └── spec-runtime.js        # Written once on first forge
+├── registry.md                # Markdown table — denormalized spec index
+└── <spec-id>/
+    ├── SPEC.html              # The spec
+    ├── research-01.md         # Research notes (stay markdown)
+    └── interview-01.md        # Interview notes (stay markdown)
 ```
 
-<Or use Mermaid for more complex diagrams:>
+The `.specs/assets/` directory is shared by every spec. AI does not author or edit these files after initial install — they are the design system. Each `SPEC.html` references them via relative paths: `../assets/spec-styles.css` and `../assets/spec-runtime.js`.
 
-```mermaid
-graph TD
-    A[Client] --> B[API Gateway]
-    B --> C{Auth Middleware}
-    C -->|Authenticated| D[Route Handler]
-    C -->|Unauthorized| E[401 Response]
-    D --> F[(Database)]
-    D --> G[Cache]
+`registry.md` stays as a markdown table — the HTML rendering provides no benefit at the index level, and a markdown table parses easily.
+
+## Source-of-truth split
+
+To avoid drift, every piece of state lives in exactly one place:
+
+| Concern | Lives in | Format |
+|---------|----------|--------|
+| Identity (id, title, status, dates, priority, tags, mockup-fidelity) | `<script type="application/json" id="spec-meta">` in `<head>` | JSON, single line, sorted keys |
+| Task lifecycle | `data-status` on `<li class="task">` | `pending` \| `completed` \| `blocked` |
+| Phase lifecycle | `data-status` on `<details class="phase">` | `pending` \| `in-progress` \| `completed` \| `blocked` |
+| Acceptance lifecycle | `data-status` on `<li class="ac-item">` | `pending` \| `completed` |
+| Progress counts ("3/12", "33%", "Phase 2 of 4") | Never stored | Derived at render time by `spec-runtime.js` |
+
+**Consequence:** updating a task is one edit — change `data-status="pending"` → `data-status="completed"`. Every progress display on the page recomputes automatically (the runtime's `deriveProgress()` function listens for `data-status` mutations).
+
+## Metadata JSON
+
+The `<script type="application/json" id="spec-meta">` block in `<head>` is the canonical identity blob. Fields:
+
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
+| `id` | Yes | string | URL-safe slug, lowercase-hyphenated |
+| `title` | Yes | string | Human-readable title |
+| `status` | Yes | string | `active` \| `paused` \| `completed` \| `archived` |
+| `created` | Yes | string | ISO date `YYYY-MM-DD` |
+| `updated` | Yes | string | ISO date `YYYY-MM-DD` |
+| `priority` | No | string | `high` \| `medium` \| `low` (default `medium`) |
+| `tags` | No | array | Lowercase strings |
+| `mockup-fidelity` | No | string | `wireframe` \| `hi-fi` \| `none` — selected during forge when UI is in scope |
+
+Single-line JSON keeps git diffs minimal. **Canonical key order** (always use this order — do not re-sort alphabetically): `id`, `title`, `status`, `created`, `updated`, `priority`, `tags`, `mockup-fidelity`. Logical grouping, not alphabetical.
+
+## Region sentinels
+
+Every top-level section is wrapped in matching comments:
+
+```html
+<!-- region:NAME -->
+<section ...>...</section>
+<!-- endregion:NAME -->
 ```
 
-<For data models, use ER diagrams:>
+The 11 canonical region names: `meta`, `toc`, `header`, `overview`, `acceptance`, `architecture`, `libraries`, `phases`, `code`, `mockups`, `decisions`, `deviations`. TDD specs add `testing` (after architecture) and `tdd-log` (before deviations).
 
-```mermaid
-erDiagram
-    USER ||--o{ ORDER : places
-    ORDER ||--|{ LINE_ITEM : contains
-    PRODUCT ||--o{ LINE_ITEM : "ordered in"
-```
+Sentinels are non-negotiable anchors:
+- AI tools use them to locate a section for editing without scanning the whole file
+- The validate recipe checks every opener has a matching closer
+- Adding a new region requires both opener AND closer
 
-<For state machines and workflows:>
+## Section structure
 
-```mermaid
-stateDiagram-v2
-    [*] --> Draft
-    Draft --> Review
-    Review --> Approved
-    Review --> Rejected
-    Approved --> Published
-    Rejected --> Draft
-```
+### 1. Header (`region:header`)
 
-## Library Choices
+`<header class="spec-header">` containing: title, ID, status chips, meta dl (Created / Updated / Tags / Mockup fidelity), and a scorecard with four cells (Tasks / Phases / Acceptance / Blockers). The scorecard values are `<span data-progress-target="...">` — derived at render time.
 
-| Need | Library | Version | Alternatives Considered | Rationale |
-|------|---------|---------|------------------------|-----------|
-| <need> | <chosen> | <ver> | <alt1>, <alt2> | <why this one> |
+### 2. Overview (`region:overview`)
 
-## Phase 1: <Phase Name> [in-progress]
+Single `<section class="section">` with a `<p>` (2-4 sentences). What is being built and why.
 
-- [x] [ID-01] <Completed task description>
-- [ ] [ID-02] <Current task description> ← current
-- [ ] [ID-03] <Future task description>
-- [ ] [ID-04] <Future task description>
+### 3. Acceptance Criteria (`region:acceptance`)
 
-## Phase 2: <Phase Name> [pending]
+`<ul class="ac-list">` with `<li class="ac-item" id="ac-N" data-ac="N" data-status="...">` rows. Each row has a `.ac-check` span and a `.ac-text` span. To flag unresolved questions, prepend the text with `<span class="ac-flag">Needs clarification</span>`.
 
-- [ ] [ID-05] <Task description>
-- [ ] [ID-06] <Task description>
-- [ ] [ID-07] <Task description>
+Specific, testable conditions. Check them off during implementation by changing `data-status` to `completed`.
 
-## Phase 3: <Phase Name> [pending]
+### 4. Architecture (`region:architecture`)
 
-- [ ] [ID-08] <Task description>
-- [ ] [ID-09] <Task description>
+One `<section class="section">` containing one or more `<figure class="diagram">` blocks. Each diagram is a `<pre class="mermaid">` with a `.diagram__label` caption. Supported Mermaid types: `flowchart`, `sequenceDiagram`, `erDiagram`, `stateDiagram-v2`, `journey`, `timeline`, `gantt`, `block-beta`, `architecture-beta`, `c4Context`. Mermaid is the default for every diagram type — no ASCII required.
 
-## Testing Strategy
+### 5. Library Choices (`region:libraries`)
 
-### Unit Tests
-- `tests/unit/<area>.test.ts` — <what it tests>
-- Framework: <Jest/Vitest/pytest/etc.>
+`<table class="table">` with columns: Need / Library / Version / Alternatives / Rationale. Library names in `<code>` tags.
 
-### Integration Tests
-- `tests/integration/<flow>.test.ts` — <what flows it tests>
-- Database/API interaction tests
+### 6. Phases & Tasks (`region:phases`)
 
-### End-to-End Tests
-- `tests/e2e/<scenario>.spec.ts` — <user flows tested>
-- Framework: <Playwright/Cypress/etc.>
+A `<div class="phases">` containing one `<details class="phase" open data-phase="N" data-status="...">` per phase. Each phase has:
+- A `<summary class="phase__header">` with the phase index, title, status pill, and progress span
+- A `<div class="phase__body">` with an optional `<span class="progress progress--strip" data-progress-bar="phase-N">` and a `<ul class="task-list">`
 
-### Edge Case Tests
-- Boundary conditions: <list>
-- Error scenarios: <list>
-- Concurrent access: <list>
+**Tasks** are `<li class="task" id="task-CODE" data-task="CODE" data-status="...">`. They contain:
+- `<span class="task__check">` — visual checkbox, styled from `data-status`
+- `<span class="task__code">` — the task code (e.g., `INV-01`)
+- `<span class="task__text">` — the description
+- Optional `<span class="task__tags">` with `<span class="task__tag">` chips
 
----
+**Task codes** use `<PREFIX>-<NN>`:
+- Prefix: 2-4 letter uppercase abbreviation of the spec ID (`user-auth-system` → `AUTH`)
+- Number: two-digit, auto-increments across ALL phases starting at 01 (not per-phase)
 
-## Resume Context
+**All phases are `open` by default.** Users can collapse individual phases. There is no "current task" marker — the first task with `data-status="pending"` is implicitly current.
 
-> <Detailed description of where you left off. Include:>
-> - What was just completed
-> - What's currently in progress
-> - Specific file paths and function/component names
-> - The exact next step to take
-> - Any blockers or open questions
->
-> Write this as if briefing a colleague picking up your work tomorrow.
+### 7. Code Previews (`region:code`)
 
-## Decision Log
+`<figure class="code-diff" data-file="..." data-language="...">` blocks. Each has:
+- `<figcaption>` with filename and diff stats
+- `<pre class="language-diff-LANG diff-highlight">` containing the unified diff
 
-| Date | Decision | Rationale |
-|------|----------|-----------|
-| <YYYY-MM-DD> | <What was decided> | <Why this choice was made> |
-
-## Deviations
-
-| Task | Spec Said | Actually Did | Why |
-|------|-----------|-------------|-----|
-| <Task name> | <What was planned> | <What was implemented> | <Reason for the change> |
-```
-
-## Field Definitions
-
-### Frontmatter Fields
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `id` | Yes | URL-safe identifier, lowercase hyphenated (e.g., `user-auth-system`) |
-| `title` | Yes | Human-readable name |
-| `status` | Yes | One of: `active`, `paused`, `completed`, `archived` |
-| `created` | Yes | ISO date when spec was created |
-| `updated` | Yes | ISO date of last modification |
-| `priority` | No | `high`, `medium`, or `low` (default: medium) |
-| `tags` | No | YAML array of categorization tags |
-
-### Phase Status Markers
-
-Phase headings include a status marker in square brackets:
-
-| Marker | Meaning |
-|--------|---------|
-| `[pending]` | Not started yet |
-| `[in-progress]` | Currently being worked on |
-| `[completed]` | All tasks done |
-| `[blocked]` | Waiting on something external |
-
-Only **one phase** should be `[in-progress]` at a time (though this isn't
-strictly enforced — sometimes parallel phases make sense).
-
-### Task Format
-
-Tasks use markdown checkboxes with a task code prefix:
-
-```markdown
-- [ ] [AUTH-01] Unchecked task (not done)
-- [x] [AUTH-02] Checked task (done)
-- [ ] [AUTH-03] Current task ← current
-```
-
-**Task codes** use the format `<PREFIX>-<NN>`:
-
-- **Prefix**: A short (2-4 letter) uppercase abbreviation of the spec.
-  Pick the most recognizable word or use initials:
-  - `user-auth-system` → `AUTH`
-  - `api-refactor` → `API`
-  - `fix-upload-bug` → `UPL`
-  - `real-time-collab` → `RTC`
-  - `ci-pipeline` → `CI`
-- **Number**: Two-digit, auto-incrementing across all phases (not per-phase).
-  Start at `01`.
-
-The `← current` marker indicates which task the AI should work on next.
-Only one task should have this marker at a time.
-
-**Task granularity**: Each task should represent roughly one focused work
-session (30 min to 2 hours of work). If a task feels like it would take a
-full day, break it into subtasks.
-
-### Uncertainty Markers
-
-Use `[NEEDS CLARIFICATION]` for any requirement or task where ambiguity
-remains after interviews:
-
-```markdown
-- [ ] [AUTH-05] [NEEDS CLARIFICATION] Handle rate limiting for uploads
-```
-
-These markers signal that the task needs more discussion before
-implementation. Don't start a task with this marker — resolve it first
-(run another interview round or ask the user directly).
-
-### Resume Context
-
-The Resume Context section is freeform markdown inside a blockquote. It
-should answer these questions:
-
-1. **What just happened?** — What was completed in the last session
-2. **What's the current state?** — Which files changed, what works, what doesn't
-3. **What's next?** — The specific next action to take
-4. **Where exactly?** — File paths, function names, line ranges
-5. **Any gotchas?** — Blockers, open questions, things that didn't work
-
-**Good example:**
-```markdown
-> Finished implementing the JWT token generation in `src/auth/tokens.ts`.
-> The `generateAccessToken()` and `generateRefreshToken()` functions are
-> working and tested. Moved on to the refresh endpoint but hit an issue:
-> the `POST /auth/refresh` handler in `src/routes/auth.ts` needs to
-> validate the refresh token AND rotate it (issue new refresh token on
-> each use). The validation part works but rotation isn't implemented.
->
-> Next step: Add `rotateRefreshToken()` to `src/auth/tokens.ts` that
-> invalidates the old token and issues a new one. Then wire it into the
-> route handler. See the TODO comment at line 47 of `src/routes/auth.ts`.
-```
-
-**Bad example:**
-```markdown
-> Was working on authentication. Made some progress on tokens.
-```
-
-### Decision Log
-
-Track non-obvious technical decisions so you (or another AI session) can
-understand why things are the way they are:
-
-```markdown
-| Date | Decision | Rationale |
-|------|----------|-----------|
-| 2026-02-10 | JWT over sessions | Stateless auth scales better for our microservice architecture |
-| 2026-02-10 | Refresh token rotation | Security best practice — limits window if a token is stolen |
-| 2026-02-11 | argon2 over bcrypt | Better resistance to GPU attacks, recommended by OWASP |
-```
-
-Good decisions to log:
-- Library/framework choices
-- Architecture patterns
-- API design decisions
-- Trade-offs made (performance vs readability, etc.)
-- Things you tried and rejected (and why)
-
-### Deviations
-
-Track cases where implementation diverged from the original spec. This
-happens when errors are found, assumptions prove wrong, or a better
-approach is discovered during coding:
-
-```markdown
-| Task | Spec Said | Actually Did | Why |
-|------|-----------|-------------|-----|
-| OAuth callback | Use passport.js | Direct HTTP calls to provider | passport.js added complexity with no benefit for just 2 providers |
-| Rate limiting | Redis-based limiter | In-memory with `express-rate-limit` | No Redis in the stack; in-memory is fine for single-instance |
-```
-
-Good deviations to log:
-- Tasks where the approach changed during implementation
-- API signatures that differ from what was planned
-- Libraries swapped for alternatives
-- Tasks skipped because they turned out unnecessary
-- Extra tasks added to handle discovered edge cases
-
-**Don't log minor adjustments** (renamed a variable, reordered parameters).
-Only log changes that would surprise someone reading the spec and comparing
-it to the code.
-
-## Minimal Spec Example
-
-For small tasks, a spec can be much simpler:
-
-```markdown
----
-id: fix-upload-bug
-title: Fix File Upload Bug
-status: active
-created: 2026-02-10
-updated: 2026-02-10
-priority: high
----
-
-# Fix File Upload Bug
-
-## Overview
-
-Files over 10MB fail silently on upload. The multipart parser truncates
-the stream. Need to fix the size limit and add proper error handling.
-
-## Phase 1: Fix and Test [in-progress]
-
-- [ ] [UPL-01] Reproduce the bug with a 15MB file ← current
-- [ ] [UPL-02] Fix multipart parser size limit in `src/upload/parser.ts`
-- [ ] [UPL-03] Add proper error response for oversized files
-- [ ] [UPL-04] Write test for boundary conditions (exactly 10MB, 10.1MB, 100MB)
-- [ ] [UPL-05] Test in staging
-
----
-
-## Resume Context
-
-> Haven't started yet. Bug report is in issue #342. The upload handler
-> is in `src/upload/parser.ts` and uses `busboy` for multipart parsing.
-> Suspect the `limits.fileSize` option is set too low.
-```
-
-## Complex Spec Example
-
-For larger features with multiple phases:
-
-```markdown
----
-id: real-time-collab
-title: Real-Time Collaboration
-status: active
-created: 2026-02-01
-updated: 2026-02-10
-priority: high
-tags: [feature, websocket, collaboration]
----
-
-# Real-Time Collaboration
-
-## Overview
-
-Add real-time collaborative editing to the document editor. Multiple
-users should see each other's cursors and edits in real time, with
-conflict resolution handled via CRDTs.
-
-## Phase 1: WebSocket Infrastructure [completed]
-
-- [x] [RTC-01] Set up WebSocket server with Socket.io
-- [x] [RTC-02] Implement room-based connections (one room per document)
-- [x] [RTC-03] Add authentication middleware for WS connections
-- [x] [RTC-04] Handle reconnection and connection state
-
-## Phase 2: CRDT Integration [in-progress]
-
-- [x] [RTC-05] Integrate Yjs as the CRDT library
-- [x] [RTC-06] Create document sync provider
-- [ ] [RTC-07] Implement awareness protocol (cursors, selections) ← current
-- [ ] [RTC-08] Add undo/redo manager that works with CRDTs
-
-## Phase 3: UI Layer [pending]
-
-- [ ] [RTC-09] Render remote cursors with user colors/names
-- [ ] [RTC-10] Show selection highlights for other users
-- [ ] [RTC-11] Add presence indicator (who's viewing)
-- [ ] [RTC-12] Handle offline state gracefully in UI
-
-## Phase 4: Edge Cases and Polish [pending]
-
-- [ ] [RTC-13] Test with 10+ simultaneous users
-- [ ] [RTC-14] Handle large document performance
-- [ ] [RTC-15] Add rate limiting for rapid edits
-- [ ] [RTC-16] Write integration tests for conflict scenarios
-
----
-
-## Resume Context
-
-> Phase 2 is in progress. Yjs is integrated and basic document sync
-> works between two browser tabs. Currently implementing the awareness
-> protocol which handles cursor positions and user presence.
->
-> The awareness provider is partially built in
-> `src/collab/awareness-provider.ts`. The local cursor state broadcasts
-> correctly but remote cursor state isn't being applied to the editor
-> yet. Need to hook into CodeMirror's decoration system to render
-> remote cursors.
->
-> Key file: `src/collab/awareness-provider.ts` (the provider)
-> Key file: `src/editor/remote-cursors.ts` (needs to be created)
-> Reference: Yjs awareness docs at https://docs.yjs.dev/api/about-awareness
-
-## Decision Log
-
-| Date | Decision | Rationale |
-|------|----------|-----------|
-| 2026-02-01 | Socket.io over raw WS | Built-in reconnection, rooms, and fallback to polling |
-| 2026-02-03 | Yjs over Automerge | Better editor integration (ProseMirror/CodeMirror bindings) |
-| 2026-02-05 | Room-per-document | Simpler than multiplexing, isolates failure domains |
-| 2026-02-08 | Awareness as separate protocol | Cursor positions need higher update frequency than doc edits |
-
-## Deviations
-
-| Task | Spec Said | Actually Did | Why |
-|------|-----------|-------------|-----|
-| WS authentication | JWT in query params | JWT in first message after connect | Query params are logged by proxies — security risk |
-```
+PrismJS `diff-highlight` plugin provides simultaneous red/green line backgrounds AND syntax highlighting for the underlying language.
+
+**Unified vs split:** Unified is the default (one `<pre>`). For changes >30 lines or spanning multiple files / non-contiguous hunks, add `data-view="split"` to the `<figure>` to render side-by-side.
+
+### 8. UI Mockups (`region:mockups`)
+
+`<figure class="mockup mockup--wireframe">` or `<figure class="mockup mockup--hifi">`. Each has:
+- Optional `<figcaption>` describing the screen + state
+- Optional `<div class="mockup__chrome">` for browser-frame look (3 dots + URL pill)
+- `<div class="mockup__body">` containing the mockup itself
+
+**Wireframe** mockups use `.wf-*` primitives from `spec-styles.css`. Composed patterns in `wireframe-library.md`.
+
+**Hi-fi** mockups use `.ui-*` components from `spec-styles.css`. Composed patterns in `mockup-library.md`. Both are bespoke component classes — no CDN dependency.
+
+**Annotations** (`<div class="wf-annotation" data-points-to="target-id">`) render as labeled callouts with SVG arrows pointing at the referenced element. The arrows are drawn by `spec-runtime.js` after layout; redrawn on resize.
+
+Omit this section entirely when `mockup-fidelity: none`.
+
+### 9. Decision Log (`region:decisions`)
+
+`<table class="log-table">` with columns: Date / Decision / Rationale. Date cells use `<td class="log-table__date">` for monospace styling.
+
+### 10. Deviations (`region:deviations`)
+
+`<table class="log-table">` with columns: Task / Spec said / Actually did / Why. Empty at forge time; filled during implementation when behavior diverges from the spec.
+
+## Edit conventions (AI authoring rules)
+
+1. **Region sentinels** are stable anchors — never delete one without deleting its pair.
+2. **Stable IDs** on every phase, task, and AC item (`id="task-INV-03"`, `id="phase-2"`, `id="ac-5"`). IDs are derived from the task code / phase number / AC number.
+3. **One attribute per line** on state-bearing elements when the line would otherwise be long:
+   ```html
+   <li class="task"
+       id="task-INV-05"
+       data-task="INV-05"
+       data-status="pending">
+   ```
+4. **One element per line** for list rows — tasks, AC items, log table rows, decision rows. Insertions touch one line.
+5. **JSON in `<script id="spec-meta">`** stays single-line with sorted keys. Small edits don't reflow large blocks.
+6. **`<details>` for collapsibles** — no JS needed; the `open` attribute controls default state.
+7. **Progress strings are NEVER hand-edited.** `<span data-progress-target="...">` holds whatever placeholder text you want; the runtime overwrites it.
+
+## Validation gate
+
+Run the recipe in `validate.md` after every edit. SKILL.md's Update Transaction makes this non-optional — never declare a task complete without it.
+
+## Pause/resume limitation
+
+HTML specs checkpoint state at **task boundaries only**. Mid-task partial state ("I refactored handleSubmit, success path works, debugging 4xx") is not captured. Pause cleanly between tasks. If you need to pause mid-task, finish or split the task first.
+
+## TDD additions
+
+TDD-only sections are documented in the `specmint-tdd-html` plugin's `references/spec-format.md`. The additions are:
+- Testing Architecture region (after architecture)
+- TDD Log region (before deviations) — swimlane rendering
+- Task tags include `[TEST-XX-NN]` / `[IMPL-XX-NN]` with `→ satisfies` references
+- Phase structure: feature-named phases with alternating TEST-IMPL pairs
+
+This file documents the core variant. Both variants share the same HTML structure for every common section.

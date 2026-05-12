@@ -1,12 +1,12 @@
-# Spec Mint Core
+# Spec Mint Core HTML
 
-[![Benchmark +39%](https://img.shields.io/badge/benchmark-%2B39%25-brightgreen)](https://github.com/ngvoicu/specmint-core#evaluation-results)
+[![Benchmark +39%](https://img.shields.io/badge/benchmark-%2B39%25-brightgreen)](https://github.com/ngvoicu/specmint-core-html#evaluation-results)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-orange)](https://github.com/ngvoicu/specmint-core)
+[![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-orange)](https://github.com/ngvoicu/specmint-core-html)
 
 **Plan mode, but actually good.**
 
-Spec Mint Core replaces ephemeral AI coding plans with persistent, resumable specs built through deep research and iterative interviews. Create a spec, work through it task by task, pause, switch to another spec, come back a week later and pick up exactly where you left off.
+Spec Mint Core HTML replaces ephemeral AI coding plans with persistent, resumable specs built through deep research and iterative interviews. Create a spec, work through it task by task, pause, switch to another spec, come back a week later and pick up exactly where you left off.
 
 Works with Claude Code (as a plugin), Codex, Cursor, Windsurf, Cline, Gemini CLI, and any AI coding tool that can read files.
 
@@ -19,13 +19,13 @@ Every AI coding tool has some version of "plan mode" — think before you code. 
 - **Track** which tasks are done and which are next
 - **Persist** the research and decisions that informed the plan
 
-Spec Mint Core fixes all of this.
+Spec Mint Core HTML fixes all of this.
 
 ## How It Works
 
 ### The Forge Workflow
 
-Run `/specmint-core:forge "add user authentication with OAuth"` and Spec Mint Core takes over:
+Run `/specmint-core-html:forge "add user authentication with OAuth"` and Spec Mint Core HTML takes over:
 
 **1. Deep Research** — Exhaustive codebase scan (reads 10-20+ actual files, not just file names), web search for best practices, Context7 library docs, library comparisons, cross-skill research (frontend-design, datasmith-pg, etc.), UI inspection if applicable. Everything saved to `.specs/<id>/research-01.md`.
 
@@ -35,92 +35,63 @@ Run `/specmint-core:forge "add user authentication with OAuth"` and Spec Mint Co
 
 **4. More Interviews** — As many rounds as needed until every task in the spec can be described concretely. No ambiguous "figure out X" tasks.
 
-**5. Write Spec** — Synthesizes all research and interviews into a comprehensive SPEC.md with architecture diagrams (ASCII/Mermaid), library comparison tables, phases, tasks, testing strategy, a decision log, and resume context. Runs a coherence and logic review before presenting.
+**5. Write Spec** — Synthesizes all research and interviews into a comprehensive `SPEC.html` with Mermaid architecture diagrams, library comparison tables, phases, tasks, syntax-highlighted code diffs, wireframe or hi-fi UI mockups, a decision log, and a deviations table. Runs a coherence and logic review before presenting.
 
 **6. Implement** — Works through the spec task by task (via `/implement`), checking them off, updating progress, logging new decisions, writing tests as specified in the testing strategy.
 
 ### Specs Are Files
 
-Specs live in `.specs/` at your project root — plain markdown with YAML frontmatter. They diff cleanly in git, are readable in any editor, and work with any AI tool.
+Specs live in `.specs/` at your project root. Each spec is a single `SPEC.html` file — rich rendering (Mermaid diagrams, syntax-highlighted code diffs, wireframe and hi-fi mockups, derived progress scorecards) backed by a strict template that AI tools can edit surgically. The `registry.md` index and the research/interview notes stay as markdown.
 
 ```
 .specs/
-├── registry.md                     # Denormalized index for status/progress lookups
+├── assets/
+│   ├── spec-styles.css             # Shared design system (written once)
+│   └── spec-runtime.js             # Progress deriver + Mermaid/Prism init
+├── registry.md                     # Denormalized index — markdown table
 └── user-auth-system/
-    ├── SPEC.md                     # The spec document
+    ├── SPEC.html                   # The spec (rich HTML)
     ├── research-01.md              # Initial codebase + web research
     ├── interview-01.md             # First interview round
     ├── research-02.md              # Follow-up research
     └── interview-02.md             # Second interview round
 ```
 
-**SPEC.md frontmatter is authoritative.** `.specs/registry.md` is a
-denormalized index for quick lookups.
+**The `<script id="spec-meta">` JSON inside `SPEC.html` is authoritative for identity. `data-status` attributes on tasks/phases/AC items carry lifecycle state. Progress strings ("3/12", "33%") are derived at render time — never stored.** `.specs/registry.md` is a denormalized index for quick lookups across specs.
 
-For this `specmint-core` repository, `.specs/` is intentionally gitignored for
+For this `specmint-core-html` repository, `.specs/` is intentionally gitignored for
 local dogfooding. In consumer projects, you can choose to commit `.specs/`.
 
-### A SPEC.md Looks Like This
+### A SPEC.html Looks Like This (Sketch)
 
-```markdown
----
-id: user-auth-system
-title: User Auth System
-status: active
-created: 2026-02-10
-updated: 2026-02-11
-priority: high
-tags: [auth, security, backend]
----
+Open `examples/SPEC.html` in a browser to see a real spec render. Below is the structure at a glance:
 
-# User Auth System
+- **Header card**: title, status pill, priority chip, created/updated dates, tags, scorecard (Tasks / Phases / Acceptance / Blockers)
+- **Acceptance Criteria**: checklist with custom-styled checkboxes, amber `Needs clarification` chips
+- **Architecture**: one or more `<pre class="mermaid">` blocks rendered as diagrams (flowcharts, ER, sequence, state)
+- **Library Choices**: clean table with version badges and rationale cells
+- **Phases & Tasks**: each phase a collapsible `<details>` with status border, progress strip, and a list of `<li class="task" data-task="AUTH-03" data-status="completed">` rows
+- **Code Previews**: `<figure class="code-diff">` blocks with red/green syntax-highlighted diffs (PrismJS `diff-highlight`)
+- **UI Mockups**: wireframe primitives (`.wf-*`) or hi-fi components (`.ui-*`) inside a browser-chrome frame; annotation callouts with SVG arrows
+- **Decision Log** + **Deviations**: styled tables
 
-## Overview
-Add JWT-based authentication with OAuth (Google, GitHub) to the Express
-API. Uses the existing middleware pattern in src/middleware/.
+```html
+<!-- Metadata blob (single-line JSON; AI tools edit it as text) -->
+<script type="application/json" id="spec-meta">{"id":"user-auth-system","title":"User Auth System","status":"active","created":"2026-02-10","updated":"2026-02-11","priority":"high","tags":["auth","security","backend"],"mockup-fidelity":"hi-fi"}</script>
 
-## Phase 1: Foundation [completed]
-- [x] [AUTH-01] Set up auth middleware in src/middleware/auth.ts
-- [x] [AUTH-02] Create User model with Prisma schema
-- [x] [AUTH-03] Implement JWT generation and verification in src/auth/tokens.ts
-- [x] [AUTH-04] Add refresh token rotation
-
-## Phase 2: OAuth Integration [in-progress]
-- [x] [AUTH-05] Google OAuth provider
-- [ ] [AUTH-06] GitHub OAuth provider ← current
-- [ ] [AUTH-07] Token exchange flow for both providers
-
-## Phase 3: Testing & Hardening [pending]
-- [ ] [AUTH-08] Unit tests for auth middleware
-- [ ] [AUTH-09] Integration tests for OAuth flow
-- [ ] [AUTH-10] Rate limiting on auth endpoints
-
----
-
-## Resume Context
-> Finished Google OAuth. GitHub OAuth callback handler is in progress at
-> `src/auth/oauth/github.ts`. The authorization URL redirect works but
-> the callback endpoint at `/auth/github/callback` needs to exchange the
-> code for tokens. Use the same pattern as Google in `src/auth/oauth/google.ts`
-> lines 45-82. The GitHub OAuth app credentials are in `.env` as
-> GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET.
-
-## Decision Log
-| Date | Decision | Rationale |
-|------|----------|-----------|
-| 2026-02-10 | JWT over sessions | Stateless, scales for microservices |
-| 2026-02-10 | Refresh token rotation | Limits damage from stolen tokens |
-| 2026-02-11 | Prisma over raw SQL | Already used in the project for other models |
-
-## Deviations
-| Task | Spec Said | Actually Did | Why |
-|------|-----------|-------------|-----|
-| AUTH-05 | Use passport.js | Direct googleapis calls | Simpler for a single provider, avoids passport session overhead |
+<!-- A task: one data-status swap is all it takes to mark complete -->
+<li class="task" id="task-AUTH-06" data-task="AUTH-06" data-status="pending">
+  <span class="task__check"></span>
+  <span class="task__code">AUTH-06</span>
+  <span class="task__text">GitHub OAuth provider</span>
+</li>
 ```
+
+The plugin ships a canonical empty template at `references/html-template.html`, before/after edit recipes for every common operation at `references/edit-recipes.md`, and pre-built mockup snippet libraries (`wireframe-library.md` + `mockup-library.md`).
 
 ## Installation
 
-Two ways to use Spec Mint Core, depending on your setup.
+Two ways to use Spec Mint Core HTML, depending on your setup.
 
 ### Path 1: Claude Code Plugin (Full — Recommended)
 
@@ -128,18 +99,18 @@ Everything: all 8 slash commands (`/forge`, `/implement`, `/resume`, `/pause`, `
 
 ```bash
 # In Claude Code, run:
-/plugin marketplace add ngvoicu/specmint-core
-/plugin install specmint-core
+/plugin marketplace add ngvoicu/specmint-core-html
+/plugin install specmint-core-html
 ```
 
 Or manually:
 ```bash
-git clone https://github.com/ngvoicu/specmint-core.git ~/.claude/plugins/specmint-core
+git clone https://github.com/ngvoicu/specmint-core-html.git ~/.claude/plugins/specmint-core-html
 ```
 
 After install, just run:
 ```
-/specmint-core:forge "add user authentication"
+/specmint-core-html:forge "add user authentication"
 ```
 
 ### Path 2: Quick Setup via npx (Any Tool)
@@ -148,22 +119,22 @@ Installs the SKILL.md into your tool's skill/instruction directory so it knows h
 
 ```bash
 # Claude Code (skill only — auto-triggers, no slash commands)
-npx skills add ngvoicu/specmint-core -g -a claude-code
+npx skills add ngvoicu/specmint-core-html -g -a claude-code
 
 # OpenAI Codex
-npx skills add ngvoicu/specmint-core -g -a codex
+npx skills add ngvoicu/specmint-core-html -g -a codex
 
 # Cursor
-npx skills add ngvoicu/specmint-core -g -a cursor
+npx skills add ngvoicu/specmint-core-html -g -a cursor
 
 # Windsurf
-npx skills add ngvoicu/specmint-core -g -a windsurf
+npx skills add ngvoicu/specmint-core-html -g -a windsurf
 
 # Cline
-npx skills add ngvoicu/specmint-core -g -a cline
+npx skills add ngvoicu/specmint-core-html -g -a cline
 
 # Gemini CLI
-npx skills add ngvoicu/specmint-core -g -a gemini
+npx skills add ngvoicu/specmint-core-html -g -a gemini
 ```
 
 For Claude Code, this installs SKILL.md with auto-triggers ("resume", "what was I working on", "create a spec for X"). You **don't** get slash commands or the researcher agent — use Path 1 for the full plugin.
@@ -188,51 +159,51 @@ For other tools, this installs the SKILL.md which teaches the tool the full spec
 
 ```
 # Start a new spec with deep research
-/specmint-core:forge "add OAuth authentication"
+/specmint-core-html:forge "add OAuth authentication"
 → Deep research (codebase + internet + Context7 + library comparison)
 → Interview rounds (targeted questions, not generic)
-→ Writes SPEC.md with architecture diagrams, library choices, testing strategy
+→ Writes SPEC.html with Mermaid diagrams, library choices, mockups, code-diff previews
 → Coherence and logic review before presenting
 
 # Implement the spec (or specific phases)
-/specmint-core:implement                    # Continue from current task
-/specmint-core:implement phase 2            # Implement all tasks in Phase 2
-/specmint-core:implement all phases         # Implement everything remaining
+/specmint-core-html:implement                    # Continue from current task
+/specmint-core-html:implement phase 2            # Implement all tasks in Phase 2
+/specmint-core-html:implement all phases         # Implement everything remaining
 
 # Generate OpenAPI spec from your codebase
-/specmint-core:openapi
+/specmint-core-html:openapi
 → Scans routes, schemas, security config
 → Writes .openapi/openapi.yaml + per-endpoint docs
 
 # Session ends — save context
-/specmint-core:pause
+/specmint-core-html:pause
 → Writes detailed resume context (file paths, function names, next step)
 
 # New session — pick up where you left off
-/specmint-core:resume
+/specmint-core-html:resume
 → Reads resume context, continues from exact spot
 
 # Juggling features
-/specmint-core:list                    # See all specs
-/specmint-core:switch auth-system      # Pauses current, activates auth-system
-/specmint-core:status                  # Detailed progress
+/specmint-core-html:list                    # See all specs
+/specmint-core-html:switch auth-system      # Pauses current, activates auth-system
+/specmint-core-html:status                  # Detailed progress
 ```
 
 ### Any Tool Flow (Codex, Cursor, Windsurf, Cline, Gemini CLI)
 
 Once configured via `npx skills add`, every tool understands the same spec lifecycle. Here's the complete workflow:
 
-**Create a spec** — Ask the tool to plan or spec out work. It creates `.specs/<id>/SPEC.md` with phases, tasks, a decision log, and resume context.
+**Create a spec** — Ask the tool to plan or spec out work. It creates `.specs/<id>/SPEC.html` with phases, tasks, mockups, a decision log, and a deviations table.
 
-**Resume** — The tool reads `.specs/registry.md` to find the active spec, loads the SPEC.md, finds the `← current` task, reads the Resume Context section, and continues from exactly where you left off.
+**Resume** — The tool reads `.specs/registry.md` to find the active spec, loads the SPEC.html, finds the first task with `data-status="pending"` in the in-progress phase, and continues from there.
 
-**Pause** — The tool captures current state into the Resume Context section: which files were modified (specific paths, function names), what was completed, the exact next step. Updates checkboxes, sets status to `paused`.
+**Pause** — The tool finalizes state at a clean task boundary, adds session decisions to the Decision Log, sets status to `paused` (in both the JSON metadata and the visible status pill), and runs the validate recipe. HTML specs do not carry mid-task state — pause cleanly between tasks.
 
 **Switch** — The tool pauses the current spec (full pause), loads the target spec, sets it to `active` in the registry, and resumes it.
 
 **List** — The tool reads `.specs/registry.md` and shows specs grouped by status (active, paused, completed).
 
-**Complete** — The tool verifies all tasks are checked, sets status to `completed` in both the SPEC.md frontmatter and the registry.
+**Complete** — The tool verifies all tasks have `data-status="completed"`, sets status to `completed` in both the spec metadata and the registry.
 
 #### Tool-specific invocation examples
 
@@ -266,14 +237,14 @@ gemini "switch to auth-system"
 
 ## Multi-Tool Support
 
-The spec format is pure markdown. Claude Code, Codex, Cursor, Windsurf, Cline, and Gemini CLI can all work on the same `.specs/` directory.
+The spec format is plain HTML (text, editable in any tool). Claude Code, Codex, Cursor, Windsurf, Cline, and Gemini CLI can all work on the same `.specs/` directory.
 
 ### Setting Up Other Tools
 
 Most tools can be set up via npx (see [Path 2](#path-2-quick-setup-via-npx-any-tool) above):
 
 ```bash
-npx skills add ngvoicu/specmint-core -g -a <tool>
+npx skills add ngvoicu/specmint-core-html -g -a <tool>
 ```
 
 For manual setup, see the snippet format in [SKILL.md](SKILL.md).
@@ -282,9 +253,9 @@ For manual setup, see the snippet format in [SKILL.md](SKILL.md).
 
 All tools share the same files:
 - **Task codes** — `[AUTH-03]` is the same task everywhere
-- **`← current` marker** — Every tool knows which task is next
-- **Resume Context** — Detailed state with file paths and function names
-- **Phase status markers** — `[pending]`, `[in-progress]`, `[completed]`, `[blocked]`
+- **`data-status` attributes** — Every tool reads `pending`, `in-progress`, `completed`, `blocked` the same way
+- **Region sentinels** — `<!-- region:phases -->` / `<!-- endregion:phases -->` anchor surgical edits
+- **Decision Log + Deviations** — Cross-session history
 
 **One rule:** Don't run two tools on the same spec simultaneously. Different specs in parallel is fine.
 
@@ -315,37 +286,39 @@ Multiple rounds (typically 2-5) until every task can be described concretely. Ea
 
 ### Phase 5: Write Spec
 
-Synthesizes everything into a comprehensive SPEC.md:
-- Architecture diagrams (ASCII and/or Mermaid)
+Synthesizes everything into a comprehensive `SPEC.html`:
+- Mermaid architecture diagrams (flowchart, sequence, ER, state, timeline)
 - Library comparison table with alternatives and rationale
 - 3-6 phases, each with concrete tasks (file paths, function names)
-- Comprehensive testing strategy (unit, integration, e2e, edge cases)
+- Optional code-diff previews for illustrative changes (PrismJS syntax-highlighted)
+- UI mockups in the chosen fidelity (wireframe with annotation arrows, or hi-fi with real-looking components)
 - Decision log captures non-obvious technical choices
-- Resume context section ready for first pause
-- Mandatory coherence and logic review before presenting
+- Deviations table (empty at forge time, filled during implementation)
+- Mandatory coherence and logic review + `validate.md` recipe before presenting
 
 ### Phase 6: Implement
 
 Works through the spec task by task (via `/implement`):
-- Marks tasks `← current` as they start
-- Checks off `- [x]` when done
-- Updates phase status markers and registry
-- Writes tests as specified in the testing strategy
+- Implements the task
+- Swaps `data-status="pending"` → `data-status="completed"` on the task element
+- When a phase finishes, transitions the phase and the next phase's status + pill
+- Runs the validate recipe after every edit
+- Updates registry progress/date
+- Writes tests as specified in the spec
 - Logs new decisions to the Decision Log
 - Logs deviations when implementation diverges from spec
-- Updates Resume Context at natural pauses
 
 ## Plan Mode
 
-Spec Mint Core **bypasses** Claude Code's built-in plan mode. The `/forge` command IS your planning phase — deep research, interviews, spec writing. You don't need plan mode at all.
+Spec Mint Core HTML **bypasses** Claude Code's built-in plan mode. The `/forge` command IS your planning phase — deep research, interviews, spec writing. You don't need plan mode at all.
 
-If you happen to be in plan mode when you run `/specmint-core:forge`, Spec Mint Core
-asks you to exit plan mode first (Shift+Tab), then rerun `/specmint-core:forge`.
+If you happen to be in plan mode when you run `/specmint-core-html:forge`, Spec Mint Core HTML
+asks you to exit plan mode first (Shift+Tab), then rerun `/specmint-core-html:forge`.
 
 ## Project Structure
 
 ```
-specmint-core/
+specmint-core-html/
 ├── .claude-plugin/
 │   ├── plugin.json                 # Plugin metadata (v2.0.0)
 │   └── marketplace.json            # Marketplace registration
@@ -361,8 +334,17 @@ specmint-core/
 ├── agents/
 │   └── researcher.md               # Deep research subagent (Opus)
 ├── references/
-│   ├── spec-format.md              # SPEC.md format specification
+│   ├── spec-format.md              # SPEC.html format reference
+│   ├── html-template.html          # Canonical empty SPEC.html template
+│   ├── edit-recipes.md             # Before/after snippets for every surgical edit
+│   ├── validate.md                 # Post-edit validation recipe
+│   ├── wireframe-library.md        # Wireframe mockup patterns (.wf-*)
+│   ├── mockup-library.md           # Hi-fi mockup patterns (.ui-*)
 │   └── command-contracts.md        # Behavioral contract checklist for commands/skill
+├── examples/
+│   ├── SPEC.html                   # Full UI-rich exemplar (team-invites)
+│   ├── spec-styles.css             # The shared design system (copied to .specs/assets/)
+│   └── spec-runtime.js             # Progress deriver, mermaid loader, annotation arrows
 ├── SKILL.md                        # Universal skill (works with all tools)
 └── README.md
 ```
@@ -370,10 +352,11 @@ specmint-core/
 ## Spec Format
 
 Full specification in [`references/spec-format.md`](references/spec-format.md).
-Behavioral guardrails in
-[`references/command-contracts.md`](references/command-contracts.md).
+Edit recipes for every common operation in [`references/edit-recipes.md`](references/edit-recipes.md).
+Validation recipe in [`references/validate.md`](references/validate.md).
+Behavioral guardrails in [`references/command-contracts.md`](references/command-contracts.md).
 
-### Frontmatter
+### Metadata (single-line JSON in `<script id="spec-meta">`)
 
 | Field | Required | Description |
 |-------|:---:|-------------|
@@ -383,25 +366,28 @@ Behavioral guardrails in
 | `created` | Yes | ISO date (YYYY-MM-DD) |
 | `updated` | Yes | ISO date of last modification |
 | `priority` | No | `high`, `medium`, `low` (default: medium) |
-| `tags` | No | YAML array |
+| `tags` | No | JSON array |
+| `mockup-fidelity` | No | `wireframe`, `hi-fi`, `none` |
 
 ### Conventions
 
-- **Phase markers**: `[pending]`, `[in-progress]`, `[completed]`, `[blocked]`
-- **Task codes**: `[PREFIX-NN]` — unique per task, auto-incrementing across phases
-- **Task checkboxes**: `- [ ] [AUTH-01]` unchecked, `- [x] [AUTH-01]` done
-- **Current task**: `← current` after the task text
-- **Uncertainty**: `[NEEDS CLARIFICATION]` after the task code on unclear tasks
-- **Architecture Diagram**: ASCII art or Mermaid diagrams (system design, data flow, ER, state machines)
+- **Phase status** (`data-status` on `<details class="phase">`): `pending`, `in-progress`, `completed`, `blocked`
+- **Task status** (`data-status` on `<li class="task">`): same values
+- **Task codes**: `[PREFIX-NN]` — unique per task, auto-incrementing across all phases
+- **Region sentinels**: `<!-- region:NAME -->` / `<!-- endregion:NAME -->` around every top-level section — used as anchors for surgical edits
+- **No current marker**: the first task with `data-status="pending"` in the active phase is implicitly current
+- **Uncertainty**: `<span class="ac-flag">Needs clarification</span>` inline in an acceptance criterion
+- **Architecture Diagrams**: Mermaid (`flowchart`, `sequenceDiagram`, `erDiagram`, `stateDiagram-v2`, etc.) inside `<pre class="mermaid">` blocks
 - **Library Choices**: Comparison table with alternatives considered and rationale
-- **Testing Strategy**: Unit, integration, e2e, and edge case tests with frameworks and file paths
-- **Resume Context**: Blockquote with specific file paths, function names, exact next step
+- **Code Previews**: `<figure class="code-diff">` with PrismJS `diff-highlight` for syntax-highlighted red/green diffs
+- **UI Mockups**: `mockup--wireframe` (grayscale `.wf-*` primitives) or `mockup--hifi` (real-looking `.ui-*` components) — both bespoke, zero CDN, constrained palette to prevent bikeshedding
 - **Decision Log**: Table with date, decision, rationale
 - **Deviations**: Table tracking where implementation diverged from spec
+- **Progress strings**: Never authored. `spec-runtime.js` derives them from `data-status` counts at page load.
 
 ## Evaluation Results
 
-Spec Mint Core has been iteratively developed and evaluated using Anthropic's
+Spec Mint Core HTML has been iteratively developed and evaluated using Anthropic's
 [Skill Creator](https://github.com/anthropics/claude-plugins-official/blob/main/plugins/skill-creator/skills/skill-creator/SKILL.md)
 — the official tool for building, testing, and benchmarking Claude Code skills.
 
@@ -427,7 +413,7 @@ and the iteration loop — see
 
 Plan mode is a good idea with a bad implementation. It restricts Claude to read-only tools and asks for a plan. That's it. No persistence, no research depth, no interviews, no progress tracking.
 
-Spec Mint Core's `/forge` command does what plan mode should do:
+Spec Mint Core HTML's `/forge` command does what plan mode should do:
 
 - **Research depth**: Reads 10-20+ files, searches the web, pulls library docs. Not a quick scan.
 - **Interviews**: Asks you targeted questions based on what it found. Multiple rounds until there's no ambiguity.
@@ -437,14 +423,14 @@ Spec Mint Core's `/forge` command does what plan mode should do:
 
 ## Pair with Kluris
 
-Spec Mint Core reads your codebase. [Kluris](https://kluris.io) gives your agents the *other* half — the tribal knowledge that never made it into comments: architecture decisions, past incidents, vendor quirks, the "why" behind every weird choice.
+Spec Mint Core HTML reads your codebase. [Kluris](https://kluris.io) gives your agents the *other* half — the tribal knowledge that never made it into comments: architecture decisions, past incidents, vendor quirks, the "why" behind every weird choice.
 
 Pair them and `/forge` Phase 1b (research) stops guessing. It consults the brain first.
 
 **Inside your AI coding agent:**
 
 ```text
-> /specmint-core:forge add OAuth sign-in with GitHub
+> /specmint-core-html:forge add OAuth sign-in with GitHub
 ```
 
 Phase 1a reads the code. Phase 1b queries the brain:
@@ -469,15 +455,6 @@ kluris wake-up
 ```
 
 Full setup at [kluris.io](https://kluris.io).
-
-## The Mint Plugin Family
-
-Spec Mint Core is part of the Mint plugin family:
-
-| Plugin | Purpose |
-|--------|---------|
-| **[specmint-core](https://github.com/ngvoicu/specmint-core)** | Persistent spec management — forge, implement, resume, pause |
-| **[specmint-tdd](https://github.com/ngvoicu/specmint-tdd)** | TDD-first fork with red-green-refactor enforcement |
 
 ## License
 

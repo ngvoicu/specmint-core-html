@@ -5,12 +5,13 @@ disable-model-invocation: true
 
 # Forge a Spec
 
-You are about to run the Spec Mint Core forge workflow. This bypasses plan mode
+You are about to run the Spec Mint Core HTML forge workflow. This bypasses plan mode
 with something far more thorough: deep research → interview → more research
 → more interview → write spec → review.
 
 The forge workflow never produces application code. Its only outputs are
-`.specs/` files: research notes, interview notes, and the SPEC.md.
+`.specs/` files: research notes, interview notes, the shared `.specs/assets/`
+folder (on first run), and the SPEC.html.
 
 The user's request: $ARGUMENTS
 
@@ -20,7 +21,7 @@ Before starting research, resolve spec identity:
 
 1. Generate a spec ID from the user's request (lowercase, hyphenated)
 2. Collision-check read-only:
-   - Check `.specs/<spec-id>/SPEC.md`
+   - Check `.specs/<spec-id>/SPEC.html`
    - Check whether `<spec-id>` exists in `.specs/registry.md`
 3. If the ID already exists, stop and ask the user to choose one:
    - **Resume** existing spec
@@ -33,11 +34,13 @@ Before starting research, resolve spec identity:
 Before starting, check if you're in plan mode (read-only).
 
 - If in plan mode:
-  - Do not run `/specmint-core:forge` in plan mode
-  - Ask the user to exit plan mode (Shift+Tab), then rerun `/specmint-core:forge`
+  - Do not run `/specmint-core-html:forge` in plan mode
+  - Ask the user to exit plan mode (Shift+Tab), then rerun `/specmint-core-html:forge`
   - Stop here until plan mode is exited
 - If NOT in plan mode:
   - Create/initialize `.specs/<spec-id>/` before the first write
+  - If `.specs/assets/` does not exist, create it and copy `spec-styles.css`
+    + `spec-runtime.js` from the plugin's `examples/` directory
   - Persist artifacts as each phase completes
 
 ## Phase 1: Deep Research
@@ -69,7 +72,7 @@ architecture:
 Use Glob, Grep, and Read aggressively. Read actual file contents, not just
 file names. Open 10-20 files if needed.
 
-**Always spawn the `specmint-core:researcher` agent** (Task tool) to run an
+**Always spawn the `specmint-core-html:researcher` agent** (Task tool) to run an
 exhaustive parallel research pass. The researcher reads 15-30 files, runs
 3+ web searches, compares library candidates, and assesses risks. Save
 structured findings to `.specs/<id>/research-01.md`. Don't skip this —
@@ -111,7 +114,7 @@ findings to:
 .specs/<spec-id>/research-01.md
 ```
 
-Structure it clearly:
+Structure it clearly (markdown):
 
 ```markdown
 # Research Notes — <Title>
@@ -162,6 +165,11 @@ generic questions — your research should inform very specific questions.
    - User-facing behavior: "What should happen when X fails?"
    - Acceptance criteria: "What does 'done' look like? Any specific
      conditions that must be true when this is complete?"
+   - **Mockup fidelity (only if UI work is in scope)**: "Mockups in this
+     spec should render as `wireframe` (clean grayscale boxes, structural,
+     no design commitment), `hi-fi` (real-looking polished components), or
+     `none` (prose + diagrams are enough)?" Record the answer — it goes
+     into the spec's `mockup-fidelity` metadata field.
 4. **Propose a rough approach** and ask for reactions — don't wait for the
    user to design everything
 
@@ -172,7 +180,7 @@ answer your own questions, guess answers, or proceed to deeper research or
 spec writing until the user responds. The interview is a real conversation —
 the user's answers determine what gets built.
 
-**Save the interview:**
+**Save the interview** (markdown):
 ```
 .specs/<spec-id>/interview-01.md
 ```
@@ -239,48 +247,66 @@ Before writing the spec, ensure the directory structure exists:
    ```
    mkdir -p .specs/<spec-id>
    ```
-3. If `.specs/` doesn't exist yet, also create `registry.md`
+3. If `.specs/` doesn't exist yet, also create `registry.md` and the
+   `.specs/assets/` directory (with `spec-styles.css` + `spec-runtime.js`
+   copied from the plugin's `examples/`).
 
 If directory creation fails because the environment is still read-only, ask
-the user to exit plan mode (Shift+Tab) and rerun `/specmint-core:forge`.
+the user to exit plan mode (Shift+Tab) and rerun `/specmint-core-html:forge`.
 
 ## Phase 5: Write the Spec
 
 Now synthesize everything — all research notes, all interview answers, all
-decisions — into a SPEC.md.
+decisions — into a `SPEC.html`.
 
-Read the skill's `references/spec-format.md` for the full template. The
-spec should include:
+**Start from the canonical template:** copy `references/html-template.html`
+to `.specs/<spec-id>/SPEC.html` and fill in every placeholder. Then add
+section content as described below. Use `references/edit-recipes.md` for
+the exact HTML structure of each common element (tasks, AC items, diagrams,
+code-diff figures, mockups, log rows). Use `references/wireframe-library.md`
+and `references/mockup-library.md` for mockup patterns.
 
-1. **YAML frontmatter**: id, title, status (active), created, updated,
-   priority, tags
-2. **Overview**: 2-4 sentences capturing the goal and scope. Someone reading
+The spec must include:
+
+1. **Metadata JSON** in `<script type="application/json" id="spec-meta">`:
+   `id`, `title`, `status` (`active`), `created`, `updated`, `priority`,
+   `tags`, `mockup-fidelity` (from the interview answer). Single line,
+   sorted keys.
+2. **Spec header card** — title, status pill (Active), priority chip,
+   created / updated / tags / mockup-fidelity dl, scorecard with four cells.
+3. **Overview**: 2-4 sentences capturing the goal and scope. Someone reading
    just this section should understand what's being built and why.
-3. **Acceptance Criteria**: Testable checkbox conditions defining "done".
-   Each criterion must be specific and verifiable. Derived from the
-   interview answers and research findings. Check them off during
-   implementation as they become satisfied.
-4. **Architecture Diagram**: ASCII art or Mermaid diagram showing the system
-   architecture, data flow, or component relationships. Every non-trivial spec
-   should have at least one diagram. Use ASCII for simple flows, Mermaid for
-   complex relationships (ER diagrams, state machines, flowcharts).
-5. **Library Choices**: Table comparing evaluated libraries with the selected
-   pick and rationale. Include version numbers. Format:
-   `| Need | Library | Version | Alternatives | Rationale |`
-6. **Phases**: Major milestones (3-6 typical). Each phase should represent a
-   coherent chunk of work that's independently testable or demoable.
-7. **Tasks**: Concrete, actionable checkboxes within each phase. Each task
-   should be completable in one focused session. Include specific file paths
-   and function names where known. Proposed solutions should be simple,
-   maintainable, and professional — clean code, modern patterns, innovative
-   where appropriate.
-8. **Testing Strategy**: Comprehensive testing plan covering unit tests,
-   integration tests, e2e tests, and edge case tests. Specify frameworks,
-   test file paths, and what each test covers. Every feature task should have
-   a corresponding test task.
-9. **Resume Context**: Write the initial context as if briefing someone who
-   will start implementing tomorrow.
-10. **Decision Log**: Every decision from the interviews, with rationale.
+4. **Acceptance Criteria**: Each criterion is `<li class="ac-item" data-ac="N"
+   data-status="pending">`. Must be specific and verifiable. Use
+   `<span class="ac-flag">Needs clarification</span>` for unresolved questions.
+5. **Architecture Diagram(s)**: Mermaid diagrams (`<pre class="mermaid">`).
+   Every non-trivial spec should have at least one. Pick the right diagram
+   type per case: `flowchart` for system flows, `sequenceDiagram` for
+   request lifecycles, `erDiagram` for data models, `stateDiagram-v2` for
+   state machines, `timeline`/`gantt` for milestones. Mermaid is the only
+   recommended path — no ASCII required.
+6. **Library Choices**: `<table class="table">` comparing evaluated
+   libraries. Format: `Need | Library | Version | Alternatives | Rationale`.
+7. **Phases & Tasks**: Major milestones (3-6 typical) in a `<div class="phases">`.
+   Each phase is `<details class="phase" open data-phase="N" data-status="...">`.
+   Tasks within are `<li class="task" data-task="CODE" data-status="pending">`.
+   Task codes use `<PREFIX>-<NN>` continuous numbering across all phases.
+   Tasks must be concrete (file paths, function names, expected behavior).
+8. **Code Previews** (optional): Use `<figure class="code-diff">` blocks
+   with PrismJS `language-diff-LANG diff-highlight` classes for illustrative
+   changes. Unified by default; side-by-side via `data-view="split"` for
+   changes >30 lines or spanning multiple files / non-contiguous hunks.
+9. **UI Mockups**: One or more `<figure class="mockup">` blocks, using
+   `mockup--wireframe` or `mockup--hifi` based on the `mockup-fidelity`
+   decided in the interview. Compose with `.wf-*` or `.ui-*` components
+   from the corresponding library reference. Omit entirely if
+   `mockup-fidelity` is `none`.
+10. **Decision Log**: `<table class="log-table">`. Add a row for every
+    non-obvious decision from the interviews.
+11. **Deviations**: Empty table. Filled during implementation.
+
+(Resume Context is NOT a section in HTML specs. Pause/resume checkpoints
+at task boundaries only — see SKILL.md.)
 
 **Coherence and logic review (mandatory before presenting):**
 
@@ -290,24 +316,24 @@ Before presenting the spec to the user, review it for coherence and logic:
 2. Check that phases are in logical dependency order — no phase requires
    work from a later phase
 3. Verify every task is concrete and actionable (file paths, function names)
-4. Confirm the architecture diagram matches the task descriptions
-5. Check that the testing strategy covers all feature tasks
-6. Verify library choices are consistent throughout (no conflicting picks)
-7. Ensure the overview accurately summarizes what the phases will deliver
-8. Look for gaps — is there anything the implementation would need that
+4. Confirm the architecture diagram(s) match the task descriptions
+5. Verify library choices are consistent throughout (no conflicting picks)
+6. Ensure the overview accurately summarizes what the phases will deliver
+7. Look for gaps — is there anything the implementation would need that
    isn't covered by a task?
-9. Verify acceptance criteria are specific, testable, and cover the key
+8. Verify acceptance criteria are specific, testable, and cover the key
    behaviors the user expects
-10. **Placeholder check**: Search the spec for "TBD", "TODO", "placeholder",
-    "TBC", "to be determined", "will be decided", "figure out" — replace
-    every instance with a concrete decision or remove the section
-11. **Internal consistency**: Verify task count in overview matches actual
-    tasks, all task code references are valid, library versions in different
-    sections don't conflict
-12. **Scope check**: Compare the spec against the interview answers — does
-    it deliver what was discussed? Nothing more, nothing less?
-13. **Ambiguity check**: For each task, ask "could an implementer complete
+9. **Placeholder check**: Search for "TBD", "TODO", "placeholder", "TBC",
+   "to be determined", "will be decided", "figure out" — replace every
+   instance with a concrete decision or remove the section
+10. **Internal consistency**: All task code references valid, library versions
+    in different sections don't conflict
+11. **Scope check**: Does the spec deliver what was discussed in interviews?
+    Nothing more, nothing less.
+12. **Ambiguity check**: For each task, ask "could an implementer complete
     this without asking me a question?" If no, add detail until yes.
+13. **Run the validate recipe** (`references/validate.md`) — confirm the
+    file parses cleanly. Re-run after every subsequent edit.
 
 **Quality check before presenting:**
 
@@ -316,16 +342,17 @@ Before presenting the spec to the user, review it for coherence and logic:
 - Phases should have clear boundaries and dependencies
 - The Decision Log should capture every non-obvious choice
 - The Overview should be understandable without reading the interviews
-- Architecture diagrams should be clear and accurate
-- UI designs should be creative, sleek, and professional — not generic
+- Diagrams should be clear and accurate
+- UI mockups (if present) should match the chosen fidelity consistently
 - Library choices should be the best available, modern, well-maintained
 
 Save to:
 ```
-.specs/<spec-id>/SPEC.md
+.specs/<spec-id>/SPEC.html
 ```
 
-Update `.specs/registry.md` (set status to `active`).
+Update `.specs/registry.md` (set status to `active`). Run the validate
+recipe one final time.
 
 **Present the spec to the user and wait for approval.** Walk through the
 phases and ask: "Does this look right? Want to adjust anything before we
@@ -333,5 +360,5 @@ start?" Do not begin implementing until the user explicitly says to proceed.
 The spec review is a gate — the user may want to add tasks, reorder phases,
 change scope, or rename things. Respect this pause.
 
-After user approval, implementation is handled by `/specmint-core:implement`.
-Do not implement application code inside `/specmint-core:forge`.
+After user approval, implementation is handled by `/specmint-core-html:implement`.
+Do not implement application code inside `/specmint-core-html:forge`.

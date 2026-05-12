@@ -1,8 +1,17 @@
-# CLAUDE.md — Spec Mint Core
+# CLAUDE.md — Spec Mint Core HTML
 
 ## Project Overview
 
-Spec Mint Core is a markdown-only Claude Code plugin (no build step, no dependencies) that replaces ephemeral AI coding plans with persistent, resumable specs. It also ships as a universal skill (`SKILL.md`) that works with Codex, Cursor, Windsurf, Cline, and Gemini CLI via `npx skills add`.
+Spec Mint Core HTML is a Claude Code plugin (no build step, no dependencies) that replaces ephemeral AI coding plans with persistent, resumable specs rendered as rich HTML documents (Mermaid diagrams, syntax-highlighted code diffs, wireframe and hi-fi UI mockups, derived progress scorecards). Plugin source is markdown + JSON; only the user-facing spec output is HTML. Also ships as a universal skill (`SKILL.md`) that works with Codex, Cursor, Windsurf, Cline, and Gemini CLI via `npx skills add`.
+
+## Knowledge base
+
+Architectural details and distribution context for the Mint family live in the **ngvoicu-sme** brain. Read and write through kluris (never edit brain files by hand — the skill enforces an approval protocol):
+
+- `/kluris-ngvoicu-sme` — Claude Code skill (search, learn, remember, create)
+- `kluris search "<query>" --brain ngvoicu-sme` — direct search
+
+Topics relevant to this repo: specmint-core-html overview, architecture, core-vs-tdd differences, distribution, evals.
 
 ## Architecture
 
@@ -10,7 +19,7 @@ The plugin has two conceptual layers:
 
 **Plugin layer** — `commands/*.md` (one file per slash command), `agents/researcher.md` (Opus-model deep research subagent), `.claude-plugin/` (metadata). Claude Code reads these markdown files as behavioral instructions.
 
-**Data layer** — `.specs/` directory created in the *consuming* project root (not this repo). All tools share this directory. SPEC.md frontmatter is authoritative; `registry.md` is a denormalized index for quick lookups. See `references/spec-format.md` for the full format specification.
+**Data layer** — `.specs/` directory created in the *consuming* project root (not this repo). Contains a shared `.specs/assets/` (`spec-styles.css` + `spec-runtime.js`, copied once from `examples/`), the `registry.md` index (markdown), and one `<spec-id>/` folder per spec with `SPEC.html` + markdown research/interview notes. The `<script id="spec-meta">` JSON inside `SPEC.html` is authoritative for identity; `data-status` attributes are authoritative for lifecycle; `registry.md` is a denormalized index. See `references/spec-format.md` for the full format specification.
 
 ### File Relationships
 
@@ -19,9 +28,10 @@ These files must stay in sync — changing one without the other will cause beha
 | Source of truth | Must match |
 |----------------|------------|
 | `references/spec-format.md` | Spec format rules in `SKILL.md` |
+| `examples/SPEC.html` + `spec-styles.css` + `spec-runtime.js` | Reference `html-template.html` and `edit-recipes.md` |
 | `commands/*.md` | Behavioral contracts in `references/command-contracts.md` |
 
-`skills/specmint-core/SKILL.md` is a symlink to `../../SKILL.md` — never replace it with a real file.
+`skills/specmint-core-html/SKILL.md` is a symlink to `../../SKILL.md` — never replace it with a real file.
 
 ## Key Conventions
 
@@ -35,10 +45,12 @@ These files must stay in sync — changing one without the other will cause beha
 
 - Edit `commands/*.md` to change slash command behavior
 - Edit `SKILL.md` to change universal skill behavior
-- Edit `references/spec-format.md` to change the SPEC.md format
+- Edit `references/spec-format.md` to change the SPEC.html format reference
+- Edit `examples/spec-styles.css` / `spec-runtime.js` / `SPEC.html` to change the rendered visual / runtime behavior. After any visual change, eyeball `examples/SPEC.html` in a browser.
+- After any spec-format change, run the validate recipe on `examples/SPEC.html` to confirm structure is still parseable.
 - Validate `.claude-plugin/*.json` stays valid JSON after edits
-- Smoke-test changes: `claude plugin add /path/to/specmint-core` in a disposable project, then run `/forge`, `/resume`, etc.
-- Windsurf users must replace the symlink at `.windsurf/skills/specmint-core/SKILL.md` with a real file copy (Cascade doesn't follow symlinks)
+- Smoke-test changes: `claude plugin add /path/to/specmint-core-html` in a disposable project, then run `/forge`, `/resume`, etc.
+- Windsurf users must replace the symlink at `.windsurf/skills/specmint-core-html/SKILL.md` with a real file copy (Cascade doesn't follow symlinks)
 
 ## Eval Infrastructure
 

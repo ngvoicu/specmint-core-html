@@ -8,16 +8,16 @@ disable-model-invocation: true
 Show detailed progress of the active spec.
 
 1. If `.specs/registry.md` does not exist, report "No specs yet" and suggest
-   running `/specmint-core:forge`.
+   running `/specmint-core-html:forge`.
 2. Read `.specs/registry.md` and find the spec with `active` status.
 3. If no active spec exists:
    - If specs exist, list them and ask which one to activate.
-   - If no specs exist, suggest running `/specmint-core:forge`.
-4. Load `.specs/<id>/SPEC.md` for the active spec and parse all phases
-   and tasks.
-5. Show a detailed breakdown with explicit markers (`✓` done, `→` in-progress,
-   `○` pending), plus exact progress (`X/Y` tasks), current phase, and current
-   task.
+   - If no specs exist, suggest running `/specmint-core-html:forge`.
+4. Load `.specs/<id>/SPEC.html` for the active spec and parse all phases
+   and tasks via `data-status` attributes.
+5. Show a detailed breakdown with explicit markers (`✓` completed, `→`
+   first pending in active phase, `○` pending), plus exact progress (`X/Y`
+   tasks), current phase, and the first pending task.
 
 ```
 User Auth System [active, high priority]
@@ -31,7 +31,7 @@ Phase 1: Foundation [completed] ✓
 
 Phase 2: OAuth Integration [in-progress] →
   ✓ Google OAuth provider
-  → GitHub OAuth provider ← current
+  → GitHub OAuth provider
   ○ Token exchange flow
 
 Phase 3: Testing [pending] ○
@@ -43,6 +43,9 @@ Progress: 5/10 tasks (50%)
 Current: GitHub OAuth provider
 ```
 
-6. Also show the Resume Context section.
-7. If there are research notes (research-*.md, interview-*.md) in
+6. If there are research notes (research-*.md, interview-*.md) in
    `.specs/<id>/`, mention them with file count.
+
+(There is no Resume Context section to show — HTML specs checkpoint at
+task boundaries only. The most recent Decision Log entries carry session
+history.)

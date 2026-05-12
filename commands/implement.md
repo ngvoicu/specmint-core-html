@@ -13,11 +13,11 @@ User's request: $ARGUMENTS
 
 Parse the user's request to determine what to implement:
 
-- **No argument / "the spec" / "implement"** → Start from the `← current`
-  task and work forward through all remaining tasks
-- **"phase N" / "phase <name>"** → Implement all unchecked tasks in that
+- **No argument / "the spec" / "implement"** → Start from the first task
+  with `data-status="pending"` in the in-progress phase and work forward
+- **"phase N" / "phase <name>"** → Implement all pending tasks in that
   specific phase only
-- **"all phases" / "everything"** → Implement all remaining unchecked tasks
+- **"all phases" / "everything"** → Implement all remaining pending tasks
   across all phases, in order
 - **"task CODE-NN"** → Implement just that specific task
 
@@ -25,23 +25,24 @@ Parse the user's request to determine what to implement:
 
 1. Read `.specs/registry.md` to find the spec with `active` status
 2. If none is active, show the user their specs so they can choose one
-3. Load `.specs/<id>/SPEC.md`
-4. Parse all phases and tasks — identify which tasks are in scope
+3. Load `.specs/<id>/SPEC.html`
+4. Parse all phases and tasks — look at `data-status` on each
+   `<li class="task">` and `<details class="phase">`. Identify which tasks
+   are in scope.
 5. Present a brief plan: "I'll implement N tasks across M phases. Starting
    with [TASK-CODE] — <task description>."
 6. **TUI Progress**: Create a TaskCreate entry for each in-scope task so
    they appear as live checkboxes in the Claude Code TUI:
    - subject: `[TASK-CODE] <task description>`
    - activeForm: `Implementing [TASK-CODE]`
-   The SPEC.md checkboxes remain the source of truth — TUI entries are a
-   convenience view for real-time progress.
+   The `data-status` attributes in `SPEC.html` remain the source of truth —
+   TUI entries are a convenience view for real-time progress.
 
 For each task in scope, in order:
 
 ### Execute
 
 1. Set the task's TUI entry to `in_progress` via TaskUpdate
-2. Mark the task with `← current` in the SPEC.md
 2. **Implement the task** — write the actual application code:
    - Follow the patterns and conventions identified in the research notes
    - Use the libraries and approaches specified in the spec
@@ -53,25 +54,31 @@ For each task in scope, in order:
 
 ### Update Progress (sacred — never skip)
 
-Progress tracking is the most important bookkeeping in specmint-core. If you
-skip this, resume breaks, the registry lies, and the spec becomes useless.
-After completing each task, immediately update the spec files:
+Progress tracking is the most important bookkeeping in specmint-core-html.
+If you skip this, resume breaks, the registry lies, and the spec becomes
+useless. After completing each task, immediately update the spec file:
 
-1. Check off the task: `- [ ]` → `- [x]`
-2. Remove `← current` from the completed task
-3. Move `← current` to the next unchecked task (or the next in-scope task)
-4. If all tasks in the current phase are done:
-   - Phase status: `[in-progress]` → `[completed]`
-   - Next phase (if any): `[pending]` → `[in-progress]`
-   - Review Acceptance Criteria — check off any that are now satisfied
-5. Update the `updated` date in YAML frontmatter
-6. Recompute progress count (X/Y) from checkboxes
-7. Update progress and `updated` date in `.specs/registry.md`
-8. **Verify**: Re-read both `SPEC.md` and `registry.md` to confirm edits
-   landed. If registry progress doesn't match SPEC.md checkbox count, fix
-   it before moving on.
-9. Update Resume Context with current state
-10. Set the task's TUI entry to `completed` via TaskUpdate
+1. In `SPEC.html`, change the task's `data-status="pending"` →
+   `data-status="completed"`. See `references/edit-recipes.md` for the
+   exact swap.
+2. If all tasks in the current phase are now completed:
+   - Phase `data-status="in-progress"` → `data-status="completed"`
+   - Update the phase's pill class (`pill--in-progress` → `pill--completed`)
+     and its label text
+   - Next phase (if any): `data-status="pending"` → `data-status="in-progress"`
+     and update its pill correspondingly
+   - Review Acceptance Criteria — update `data-status="completed"` on any
+     that are now satisfied
+3. Update the `"updated"` field in `<script id="spec-meta">` JSON
+4. Update the visible "Updated" `<dd>` in the spec header dl
+5. **Run the validate recipe** (`references/validate.md`). If it fails,
+   fix the broken JSON or sentinel pair before moving on.
+6. Update progress and `updated` date in `.specs/registry.md` (count
+   `data-status="completed"` task elements for the X/Y)
+7. **Verify**: Re-read both `SPEC.html` and `registry.md` to confirm edits
+   landed. If registry progress doesn't match the completed-task count,
+   fix it before moving on.
+8. Set the task's TUI entry to `completed` via TaskUpdate
 
 If you realize you forgot to update after a previous task, stop and fix
 it now before continuing with the next task.
@@ -81,7 +88,7 @@ it now before continuing with the next task.
 When all tasks in a phase are completed, review before moving to the next:
 
 1. Dispatch the `superpowers:code-reviewer` agent (if available) with:
-   - The phase requirements from the SPEC.md
+   - The phase requirements from the SPEC.html
    - The list of files created/modified during this phase
    - The acceptance criteria relevant to this phase
 2. If no reviewer agent is available, do an inline review:
@@ -94,13 +101,14 @@ When all tasks in a phase are completed, review before moving to the next:
 ### Handle Issues
 
 - If a task is more complex than expected, split it into subtasks and update
-  the SPEC.md before continuing
+  the SPEC.html before continuing
 - If implementation diverges from the spec (better approach found, errors in
   spec, etc.), log it in the **Deviations** section
 - Log any new technical decisions in the **Decision Log**
 - If blocked on a task:
-  - Keep the task unchecked and add a blocker note in Resume Context
-  - Set the phase marker to `[blocked]` only when the whole phase is blocked
+  - Set the task's `data-status="blocked"`
+  - Add a Decision Log entry noting the blocker
+  - Set the phase `data-status="blocked"` only when the whole phase is blocked
   - Move to the next unblocked task if possible
 
 ## Parallel Task Execution (optional)
@@ -112,11 +120,12 @@ Agent tool:
 1. Identify which tasks have no file-level or logical dependencies on
    each other
 2. Dispatch an Agent for each independent task with:
-   - The full task specification from the SPEC.md
+   - The full task specification from the SPEC.html
    - The research notes and library choices for context
    - Clear instructions on which files to create/modify
 3. After all agents complete, integrate results and run tests
-4. Update all checkboxes, registry, and TUI entries in a single batch
+4. Update all `data-status` attributes, the registry, and TUI entries in
+   a single batch; run validate once
 
 Default to sequential execution. Only parallelize when tasks are clearly
 independent and the speedup is worth the coordination overhead. When in
@@ -140,17 +149,19 @@ When all in-scope tasks are done:
 
 - If all tasks in the spec are complete:
   - **Run the full test suite** and show the output (verification gate)
-  - Verify all Acceptance Criteria are checked. If any remain unchecked,
-    report which ones and ask the user before marking complete.
-  - Set all phases to `[completed]`
-  - Set spec status to `completed` in frontmatter
+  - Verify all Acceptance Criteria have `data-status="completed"`. If any
+    remain pending, report which ones and ask the user before marking
+    the spec complete.
+  - Set every phase `data-status="completed"` (and update their pills)
+  - Set spec status to `completed` in JSON metadata + visible header pill
   - Update `.specs/registry.md` with `completed` status
+  - Run the validate recipe
   - Present a summary: tasks completed, files created/modified, test output
   - Suggest next spec to activate if any are paused
 - If only a phase was completed:
   - **Run tests** for the phase's scope and show the output (verification gate)
   - Report phase completion and remaining work
-  - Set the next phase to `[in-progress]` if applicable
+  - Set the next phase to `data-status="in-progress"` if applicable
 
 ## Quality Standards
 
@@ -158,6 +169,12 @@ During implementation:
 - Write clean, simple, maintainable code — no over-engineering
 - Follow existing codebase patterns and conventions
 - Use the libraries specified in the spec's Library Choices section
-- Write comprehensive tests as specified in the Testing Strategy
+- Write comprehensive tests as specified in the spec
 - Handle edge cases identified in the spec
 - Validate at system boundaries, trust internal code
+
+## Pause Limitation
+
+HTML specs checkpoint state at task boundaries. If you must pause
+mid-task, finish or split the task first — there is no Resume Context
+section to capture in-flight state.
