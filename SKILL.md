@@ -447,9 +447,27 @@ able to implement the feature without guessing. Include:
   multi-hunk, or where the before/after comparison itself is the point.
 - **UI Mockups** — One or more `<figure class="mockup">` blocks, using
   wireframe (`mockup--wireframe`) or hi-fi (`mockup--hifi`) per the
-  fidelity decided in the interview. Compose with `.wf-*` or `.ui-*`
-  components from the corresponding library reference. Omit entirely if
+  fidelity decided in the interview. Omit entirely if
   `mockup-fidelity: none`.
+
+  **MUST compose from the `.wf-*` (wireframe) or `.ui-*` (hi-fi)
+  component classes defined in `assets/spec-styles.css`.** Before
+  authoring any mockup, **read `references/wireframe-library.md`**
+  (wireframe primitives + canonical patterns: App shell, Form,
+  Empty state, Table page, Modal, Stepper/wizard, Detail/master,
+  Settings panel, Card grid) or **`references/mockup-library.md`**
+  (hi-fi components: Login form, Dashboard, Data table, Empty state,
+  Modal dialog, Toast, Form with validation, Multi-step wizard,
+  Alert+tabs, Settings panel, Card grid).
+
+  **Never use ASCII art inside `<figure class="mockup">`** — no boxes
+  drawn with `+`, `|`, `-`; no pipe-delimited tables; no monospace
+  pseudo-diagrams. If you need a grid, use `.wf-table` (with
+  `style="--cols: N;"`) or the hi-fi `.ui-table` patterns. If you need
+  cards, use `.wf-card`. If a layout you need isn't in the library,
+  compose new structure from the primitives — do **not** fall back to
+  ASCII. ASCII inside mockups is treated as a render bug by the
+  validator and surfaces as a warning.
 - **Decision Log** — Empty initially; populated as work progresses.
 - **Deviations** — Empty initially; populated during implementation when
   behavior diverges from the spec.

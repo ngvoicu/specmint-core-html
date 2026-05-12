@@ -139,6 +139,8 @@ PrismJS `diff-highlight` plugin provides simultaneous red/green line backgrounds
 
 **Hi-fi** mockups use `.ui-*` components from `spec-styles.css`. Composed patterns in `mockup-library.md`. Both are bespoke component classes — no CDN dependency.
 
+**No ASCII art inside `<figure class="mockup">`.** This is a hard rule. No boxes drawn with `+`, `|`, `-`; no pipe-delimited tables; no monospace pseudo-diagrams. If you need a table use `.wf-table` (`style="--cols: N;"`); if cards use `.wf-card`; if a layout isn't covered by the library, compose new structure from `.wf-*` / `.ui-*` primitives. The runtime validator flags ASCII-art `<pre>` blocks inside mockup figures.
+
 **Annotations** (`<div class="wf-annotation" data-points-to="target-id">`) render as labeled callouts with SVG arrows pointing at the referenced element. The arrows are drawn by `spec-runtime.js` after layout; redrawn on resize.
 
 Omit this section entirely when `mockup-fidelity: none`.

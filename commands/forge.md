@@ -324,9 +324,19 @@ The spec must include:
    multi-hunk, or where the before/after comparison itself is the point.
 9. **UI Mockups**: One or more `<figure class="mockup">` blocks, using
    `mockup--wireframe` or `mockup--hifi` based on the `mockup-fidelity`
-   decided in the interview. Compose with `.wf-*` or `.ui-*` components
-   from the corresponding library reference. Omit entirely if
-   `mockup-fidelity` is `none`.
+   decided in the interview. Omit entirely if `mockup-fidelity` is `none`.
+
+   **MUST compose from the `.wf-*` (wireframe) or `.ui-*` (hi-fi)
+   component classes in `assets/spec-styles.css`.** Read
+   `references/wireframe-library.md` or `references/mockup-library.md`
+   before authoring — both files contain canonical patterns (App shell,
+   Form, Table page, Modal, Card grid, Dashboard, Empty state, etc.).
+
+   **Never use ASCII art inside `<figure class="mockup">`** — no boxes
+   drawn with `+`, `|`, `-`; no pipe-delimited tables; no monospace
+   pseudo-diagrams. For grids use `.wf-table` (`style="--cols: N;"`)
+   or the hi-fi `.ui-table` patterns. For cards use `.wf-card`. Compose
+   new structures from primitives if needed — do not fall back to ASCII.
 10. **Decision Log**: `<table class="log-table">`. Add a row for every
     non-obvious decision from the interviews.
 11. **Deviations**: Empty table. Filled during implementation.
