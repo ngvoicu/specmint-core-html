@@ -77,18 +77,6 @@ The screenshot above is a real `SPEC.html` rendered in a browser. Below is the s
 - **UI Mockups**: wireframe primitives (`.wf-*`) or hi-fi components (`.ui-*`) inside a browser-chrome frame; annotation callouts with SVG arrows
 - **Decision Log** + **Deviations**: styled tables
 
-```html
-<!-- Metadata blob (single-line JSON; AI tools edit it as text) -->
-<script type="application/json" id="spec-meta">{"id":"user-auth-system","title":"User Auth System","status":"active","created":"2026-02-10","updated":"2026-02-11","priority":"high","tags":["auth","security","backend"],"mockup-fidelity":"hi-fi"}</script>
-
-<!-- A task: one data-status swap is all it takes to mark complete -->
-<li class="task" id="task-AUTH-06" data-task="AUTH-06" data-status="pending">
-  <span class="task__check"></span>
-  <span class="task__code">AUTH-06</span>
-  <span class="task__text">GitHub OAuth provider</span>
-</li>
-```
-
 The plugin ships a canonical empty template at `references/html-template.html`, before/after edit recipes for every common operation at `references/edit-recipes.md`, and pre-built mockup snippet libraries (`wireframe-library.md` + `mockup-library.md`).
 
 ## Installation
