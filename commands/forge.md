@@ -298,10 +298,30 @@ The spec must include:
    Tasks within are `<li class="task" data-task="CODE" data-status="pending">`.
    Task codes use `<PREFIX>-<NN>` continuous numbering across all phases.
    Tasks must be concrete (file paths, function names, expected behavior).
-8. **Code Previews** (optional): Use `<figure class="code-diff">` blocks
-   with PrismJS `language-diff-LANG diff-highlight` classes for illustrative
-   changes. Unified by default; side-by-side via `data-view="split"` for
-   changes >30 lines or spanning multiple files / non-contiguous hunks.
+8. **Code Previews**: `<figure class="code-diff">` blocks with PrismJS
+   `language-diff-LANG diff-highlight` classes. **Expected on every
+   feature spec** (only skip for pure research / docs specs that
+   produce no code). Include **one canonical figure per category** —
+   not every instance:
+   - The signature/contract of each new public interface, exported
+     function, class, or API endpoint
+   - The shape of each new data model, schema, or migration
+   - Non-trivial business logic (algorithm, validation, transformation)
+     where the body itself matters
+   - The "before → after" of each refactor or significant signature
+     change that captures a design decision
+   - One canonical test per new test pattern (not every test body)
+
+   Skip boilerplate, repeated identical patterns (show one, note the
+   rest follow), codegen output, formatted JSON, and build artifacts.
+
+   Sizing: small spec (1-2 phases) → 2-4 previews; medium (3-5 phases)
+   → 5-10; large (6+ phases across API + DB + UI) → 10-20. A spec that
+   produces many changes but ships only 1-2 previews has missed the
+   point — surface the most important deltas, not the absolute minimum.
+
+   Unified diff by default; `data-view="split"` for changes >30 lines,
+   multi-hunk, or where the before/after comparison itself is the point.
 9. **UI Mockups**: One or more `<figure class="mockup">` blocks, using
    `mockup--wireframe` or `mockup--hifi` based on the `mockup-fidelity`
    decided in the interview. Compose with `.wf-*` or `.ui-*` components

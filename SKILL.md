@@ -418,9 +418,33 @@ able to implement the feature without guessing. Include:
   `<details class="phase" open>` with status pill, progress strip, and a
   `<ul class="task-list">`. Tasks are concrete and actionable (file paths,
   function names, expected behavior).
-- **Code Previews** (optional) — `<figure class="code-diff">` blocks for
-  illustrative changes. Unified by default; side-by-side via
-  `data-view="split"` for >30 line changes or multi-hunk.
+- **Code Previews** — `<figure class="code-diff">` blocks showing the
+  meaningful code deltas the spec will produce. **Expected on every
+  feature spec.** Skip only when the spec genuinely produces no code
+  (pure research / docs).
+
+  **Include one canonical figure per category** (not every instance):
+  - The signature/contract of each new public interface, exported
+    function, class, or API endpoint
+  - The shape of each new data model, schema, or migration
+  - Non-trivial business logic — algorithm, validation, transformation
+    — where the body itself matters
+  - The "before → after" of each refactor or significant signature
+    change that captures a design decision
+  - One canonical test per new test pattern (not every test body)
+
+  **Skip:** boilerplate (imports, scaffolding, route registration
+  already implied by phases); repeated identical patterns (show one,
+  note the rest follow); codegen output / formatted JSON / build
+  artifacts.
+
+  **Sizing.** Small spec (1-2 phases, one module): 2-4 previews. Medium
+  (3-5 phases): 5-10. Large (6+ phases across API + DB + UI): 10-20.
+  If a spec produces hundreds of changes but only has 1-2 previews, you
+  missed the point — surface the most important deltas.
+
+  Unified diff by default; `data-view="split"` for changes >30 lines,
+  multi-hunk, or where the before/after comparison itself is the point.
 - **UI Mockups** — One or more `<figure class="mockup">` blocks, using
   wireframe (`mockup--wireframe`) or hi-fi (`mockup--hifi`) per the
   fidelity decided in the interview. Compose with `.wf-*` or `.ui-*`

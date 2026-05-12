@@ -124,6 +124,8 @@ A `<div class="phases">` containing one `<details class="phase" open data-phase=
 
 PrismJS `diff-highlight` plugin provides simultaneous red/green line backgrounds AND syntax highlighting for the underlying language.
 
+**Coverage rule:** Code Previews are **expected on every feature spec**, not optional. Include one canonical figure per category — new interface/contract, new data model or schema, non-trivial business logic, before→after of significant refactors, the shape of each new test pattern. Skip boilerplate, repeated patterns, and codegen output. Typical sizing: 2-4 previews for a small spec, 5-10 for medium, 10-20 for large (API + DB + UI). See SKILL.md / commands/forge.md for the full selection rules.
+
 **Unified vs split:** Unified is the default (one `<pre>`). For changes >30 lines or spanning multiple files / non-contiguous hunks, add `data-view="split"` to the `<figure>` to render side-by-side.
 
 ### 8. UI Mockups (`region:mockups`)
