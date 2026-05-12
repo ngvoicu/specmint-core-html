@@ -436,8 +436,30 @@ able to implement the feature without guessing. Include:
   block exists on the page.
 - Use the right diagram type: `flowchart` for system flows, `sequenceDiagram`
   for request lifecycles, `erDiagram` for data models, `stateDiagram-v2`
-  for state machines, etc.
+  for state machines, `timeline`, `journey`, `gantt`, `block-beta`,
+  `architecture-beta`, `c4Context`, `treemap`.
 - Include at least one diagram per spec (architecture, data flow, or state).
+
+**Mermaid authoring rules (avoid the common parse-error pitfalls):**
+- **Use raw characters, never HTML entities**, inside `<pre class="mermaid">`.
+  Write `A --> B`, `A & B`, `"foo"` — not `A --&gt; B`, `A &amp; B`,
+  `&quot;foo&quot;`. Mermaid parses the pre's text content as plain text;
+  entity strings would be read literally and break parsing.
+- **Quote any label containing `:` `(` `)` `,` or spaces with special meaning**.
+  In flowcharts: `A["My Node (with parens)"]`. In sequence diagrams:
+  `A->>B: "label: with colon"`. Unquoted colons in flowchart node labels
+  are the most common cause of "got 'NEWLINE'" parse errors.
+- **Keep participant/node IDs identifier-safe** — letters, digits,
+  underscores. Use `participant API as "API service"` aliases for display
+  names with spaces or punctuation.
+- **Terminate every arrow with a label or node** — bare `A -->` at end of
+  line is a syntax error.
+- **One statement per line**; do not run two flow edges together with `;`.
+- After writing or editing diagrams, **run the validator** to confirm
+  every block parses: open the rendered `SPEC.html` in a browser and call
+  `specmintValidate()` in the page console. Failed diagrams are marked
+  with `figure.diagram--error` and their source is preserved on
+  `data-mermaid-source` for inspection.
 
 **Solution quality standards:**
 - Proposed solutions should be simple, maintainable, and professional
