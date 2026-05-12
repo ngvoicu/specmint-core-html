@@ -276,7 +276,8 @@ The spec must include:
 1. **Metadata JSON** in `<script type="application/json" id="spec-meta">`:
    `id`, `title`, `status` (`active`), `created`, `updated`, `priority`,
    `tags`, `mockup-fidelity` (from the interview answer). Single line,
-   sorted keys.
+   canonical key order (`id`, `title`, `status`, `created`, `updated`,
+   `priority`, `tags`, `mockup-fidelity` — logical, not alphabetical).
 2. **Spec header card** — title, status pill (Active), priority chip,
    created / updated / tags / mockup-fidelity dl, scorecard with four cells.
 3. **Overview**: 2-4 sentences capturing the goal and scope. Someone reading

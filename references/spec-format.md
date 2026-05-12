@@ -9,16 +9,20 @@ Every project that uses this plugin has a `.specs/` directory at the project roo
 ```
 .specs/
 ├── assets/
-│   ├── spec-styles.css        # Written once on first forge
-│   └── spec-runtime.js        # Written once on first forge
+│   ├── spec-styles.css        # Refreshed on every forge
+│   └── spec-runtime.js        # Refreshed on every forge
 ├── registry.md                # Markdown table — denormalized spec index
 └── <spec-id>/
     ├── SPEC.html              # The spec
     ├── research-01.md         # Research notes (stay markdown)
-    └── interview-01.md        # Interview notes (stay markdown)
+    ├── interview-01.md        # Interview notes (stay markdown)
+    └── artifacts/             # Optional: AI-tool scratch (test logs,
+                               #   attempt dumps). Never authoritative.
 ```
 
-The `.specs/assets/` directory is shared by every spec. AI does not author or edit these files after initial install — they are the design system. Each `SPEC.html` references them via relative paths: `../assets/spec-styles.css` and `../assets/spec-runtime.js`.
+The `.specs/assets/` directory is shared by every spec. AI never hand-edits these — they are the design system, copied from the plugin's `assets/` on every forge so existing projects pick up runtime fixes. Each `SPEC.html` references them via relative paths: `../assets/spec-styles.css` and `../assets/spec-runtime.js`.
+
+The per-spec `artifacts/` subdirectory is **optional**: only create it when the AI tool needs to persist scratch files (e.g., test-run logs the tool can't carry across turns in memory). Files inside `artifacts/` are never read back as authoritative — the spec's Decision Log, research-/interview notes, and (for TDD) the TDD Log section inside `SPEC.html` are the durable record. Don't write scratch files anywhere else under `.specs/<id>/`.
 
 `registry.md` stays as a markdown table — the HTML rendering provides no benefit at the index level, and a markdown table parses easily.
 
@@ -28,7 +32,7 @@ To avoid drift, every piece of state lives in exactly one place:
 
 | Concern | Lives in | Format |
 |---------|----------|--------|
-| Identity (id, title, status, dates, priority, tags, mockup-fidelity) | `<script type="application/json" id="spec-meta">` in `<head>` | JSON, single line, sorted keys |
+| Identity (id, title, status, dates, priority, tags, mockup-fidelity) | `<script type="application/json" id="spec-meta">` in `<head>` | JSON, single line, canonical key order (logical, not alphabetical) |
 | Task lifecycle | `data-status` on `<li class="task">` | `pending` \| `completed` \| `blocked` |
 | Phase lifecycle | `data-status` on `<details class="phase">` | `pending` \| `in-progress` \| `completed` \| `blocked` |
 | Acceptance lifecycle | `data-status` on `<li class="ac-item">` | `pending` \| `completed` |
@@ -63,7 +67,7 @@ Every top-level section is wrapped in matching comments:
 <!-- endregion:NAME -->
 ```
 
-The 11 canonical region names: `meta`, `toc`, `header`, `overview`, `acceptance`, `architecture`, `libraries`, `phases`, `code`, `mockups`, `decisions`, `deviations`. TDD specs add `testing` (after architecture) and `tdd-log` (before deviations).
+The 12 canonical region names: `meta`, `toc`, `header`, `overview`, `acceptance`, `architecture`, `libraries`, `phases`, `code`, `mockups` (optional), `decisions`, `deviations`. TDD specs add `testing` (after architecture) and `tdd-log` (before deviations).
 
 Sentinels are non-negotiable anchors:
 - AI tools use them to locate a section for editing without scanning the whole file
@@ -157,7 +161,7 @@ Omit this section entirely when `mockup-fidelity: none`.
        data-status="pending">
    ```
 4. **One element per line** for list rows — tasks, AC items, log table rows, decision rows. Insertions touch one line.
-5. **JSON in `<script id="spec-meta">`** stays single-line with sorted keys. Small edits don't reflow large blocks.
+5. **JSON in `<script id="spec-meta">`** stays single-line with canonical key order (logical, not alphabetical). Small edits don't reflow large blocks.
 6. **`<details>` for collapsibles** — no JS needed; the `open` attribute controls default state.
 7. **Progress strings are NEVER hand-edited.** `<span data-progress-target="...">` holds whatever placeholder text you want; the runtime overwrites it.
 

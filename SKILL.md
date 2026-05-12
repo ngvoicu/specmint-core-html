@@ -32,6 +32,9 @@ and the user's preference for tracked vs local-only spec state.
    - Shared assets: `.specs/assets/spec-styles.css` + `.specs/assets/spec-runtime.js`
    - Per-spec files: `.specs/<id>/SPEC.html`, `.specs/<id>/research-*.md`,
      `.specs/<id>/interview-*.md`
+   - Optional scratch: `.specs/<id>/artifacts/` — any AI-tool transient
+     files (test-run logs, attempt dumps, debug traces). Never authoritative.
+     Don't write scratch files anywhere else under `.specs/<id>/`.
 3. **Authority rule**: The `<script id="spec-meta">` JSON inside `SPEC.html`
    is authoritative for identity. The `data-status` attributes on tasks /
    phases / acceptance criteria are authoritative for lifecycle. The
@@ -80,7 +83,7 @@ use the markdown-flavored variant for those specs.
 | `.specs/registry.md` missing | If `.specs/` exists, report "No registry yet" and offer to initialize it. If `.specs/` is missing, report "No specs yet" and continue normally. |
 | `.specs/assets/` missing or stale when a SPEC.html is being written | Refresh it — copy `spec-styles.css` and `spec-runtime.js` from the plugin's `assets/` directory into `.specs/assets/`, **overwriting any existing files**. The runtime ships rendering fixes (Mermaid, diagram fullscreen modal, code highlighting) and must stay in sync with the plugin version. |
 | Malformed registry row | Skip malformed row, emit warning with row text, continue parsing remaining rows. |
-| Multiple `active` rows | Warn user. Pick the row with the newest `Updated` date for this run. On next write, normalize to a single active spec. |
+| Multiple `active` rows | Warn user. Pick the row with the newest `Updated` date (or first active row if dates are unavailable) for this run. On next write, normalize to a single active spec. |
 | Registry row exists but `.specs/<id>/SPEC.html` missing | Warn and continue. Keep row visible in list/status with `(SPEC.html missing)`. |
 | Registry and SPEC conflict | Trust `SPEC.html`, then repair registry values on next write. |
 | Validate recipe fails after an edit | Stop. Fix the broken JSON or sentinel pair before continuing. |
@@ -208,8 +211,10 @@ and `references/mockup-library.md`. The post-edit validator is in
 **Key facts about the format:**
 
 - Each `SPEC.html` references `../assets/spec-styles.css` and
-  `../assets/spec-runtime.js`. Those two files are written once per project
-  on first forge and are shared by every spec.
+  `../assets/spec-runtime.js`. Those two files are shared by every spec
+  in the project and are refreshed from the plugin's `assets/` on every
+  forge (overwrite, not skip-if-present) so existing projects pick up
+  runtime fixes.
 - Identity (`id`, `title`, `status`, `created`, `updated`, `priority`,
   `tags`, `mockup-fidelity`) lives in a `<script type="application/json"
   id="spec-meta">` blob in `<head>`, single-line JSON, canonical key order
@@ -241,8 +246,8 @@ If the environment is in read-only plan mode, do not run forge in that mode.
 Ask the user to exit plan mode (Shift+Tab) and rerun `/specmint-core-html:forge`.
 
 **The forge workflow never produces application code.** Its outputs are only
-`.specs/` files: research notes, interview notes, the assets directory if
-missing, and the SPEC.html. If the user says "write a spec", that means
+`.specs/` files: research notes, interview notes, refreshed shared assets,
+and the SPEC.html. If the user says "write a spec", that means
 write a SPEC.html — not implement the feature. Implementation happens
 separately, after the user reviews and approves the spec.
 
@@ -595,15 +600,23 @@ All state lives in `.specs/` at the project root:
 ```
 .specs/
 ├── assets/
-│   ├── spec-styles.css       # Shared design system (written once)
-│   └── spec-runtime.js       # Shared runtime (written once)
+│   ├── spec-styles.css       # Shared design system (refreshed every forge)
+│   └── spec-runtime.js       # Shared runtime (refreshed every forge)
 ├── registry.md               # Markdown table — denormalized index
 └── <spec-id>/
     ├── SPEC.html             # The spec document
     ├── research-01.md        # Deep research findings (markdown)
     ├── interview-01.md       # Interview notes (markdown)
+    ├── artifacts/            # Optional: AI-tool scratch (test logs,
+    │                         #   attempt dumps). Never authoritative.
     └── ...
 ```
+
+`.specs/<spec-id>/artifacts/` is optional: only create it when the AI tool
+needs to persist scratch (e.g., test-run logs it can't keep in conversation
+memory). Most runs have no artifacts. The directory is never read back as
+authoritative state — the spec's TDD Log section, Decision Log, and
+research-/interview notes are the durable record.
 
 ## Registry Format
 
@@ -635,7 +648,7 @@ Paused:
   || api-refactor: API Refactoring (2/8 tasks, Phase 1)
 
 Completed:
-  ok ci-pipeline: CI Pipeline Setup (8/8 tasks)
+  + ci-pipeline: CI Pipeline Setup (8/8 tasks)
 ```
 
 ## Canonical Output Templates
@@ -657,7 +670,7 @@ Active:
 Paused:
   || <id>: <Title> (<done>/<total>, <phase>) [<priority>]
 Completed:
-  ok <id>: <Title> (<done>/<total>) [<priority>]
+  + <id>: <Title> (<done>/<total>) [<priority>]
 ```
 
 **Status**
@@ -668,14 +681,6 @@ Phase <n>: <name> [<marker>]
 Progress: <done>/<total> (<pct>%)
 Current: <task text or none>
 ```
-
-## Completing a Spec
-
-1. Verify all tasks have `data-status="completed"` (warn if not, but allow override)
-2. Set status to `completed` in JSON metadata and registry
-3. Update the `updated` date in both
-4. Run validate recipe
-5. Suggest next spec to activate if any are paused
 
 ## Archiving a Spec
 
