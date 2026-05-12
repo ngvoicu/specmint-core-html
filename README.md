@@ -322,11 +322,13 @@ specmint-core-html/
 ├── .claude-plugin/
 │   ├── plugin.json                 # Plugin metadata (v2.0.0)
 │   └── marketplace.json            # Marketplace registration
+├── .cursor-plugin/
+│   └── plugin.json                 # Cursor distribution metadata
 ├── commands/
-│   ├── forge.md                    # Research → interview → spec
-│   ├── implement.md                # Implement spec tasks, update progress
-│   ├── resume.md                   # Resume active spec
-│   ├── pause.md                    # Pause with context
+│   ├── forge.md                    # Research → interview → spec (asks mockup-fidelity for UI specs)
+│   ├── implement.md                # Implement spec tasks, swap data-status, run validator
+│   ├── resume.md                   # Resume active spec (first pending task = current)
+│   ├── pause.md                    # Pause at a clean task boundary
 │   ├── switch.md                   # Switch between specs
 │   ├── list.md                     # List all specs
 │   ├── status.md                   # Detailed progress
@@ -337,14 +339,19 @@ specmint-core-html/
 │   ├── spec-format.md              # SPEC.html format reference
 │   ├── html-template.html          # Canonical empty SPEC.html template
 │   ├── edit-recipes.md             # Before/after snippets for every surgical edit
-│   ├── validate.md                 # Post-edit validation recipe
-│   ├── wireframe-library.md        # Wireframe mockup patterns (.wf-*)
-│   ├── mockup-library.md           # Hi-fi mockup patterns (.ui-*)
+│   ├── validate.md                 # Post-edit validation recipe (Python one-liner)
+│   ├── wireframe-library.md        # Wireframe mockup patterns (.wf-* primitives)
+│   ├── mockup-library.md           # Hi-fi mockup patterns (.ui-* components)
 │   └── command-contracts.md        # Behavioral contract checklist for commands/skill
 ├── examples/
 │   ├── SPEC.html                   # Full UI-rich exemplar (team-invites)
-│   ├── spec-styles.css             # The shared design system (copied to .specs/assets/)
-│   └── spec-runtime.js             # Progress deriver, mermaid loader, annotation arrows
+│   ├── spec-styles.css             # Shared design system — copied to .specs/assets/ on first forge
+│   └── spec-runtime.js             # Progress deriver + Mermaid/Prism init + SVG annotation arrows
+├── specmint-workspace/             # Eval scaffold (gitignored)
+│   └── evals/evals.json            # Placeholder TODO assertions — not yet runnable
+├── skills/
+│   └── specmint-core-html/
+│       └── SKILL.md                # → ../../SKILL.md (symlink for plugin discovery)
 ├── SKILL.md                        # Universal skill (works with all tools)
 └── README.md
 ```
