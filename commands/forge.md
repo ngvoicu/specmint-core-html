@@ -40,7 +40,7 @@ Before starting, check if you're in plan mode (read-only).
 - If NOT in plan mode:
   - Create/initialize `.specs/<spec-id>/` before the first write
   - If `.specs/assets/` does not exist, create it and copy `spec-styles.css`
-    + `spec-runtime.js` from the plugin's `examples/` directory
+    + `spec-runtime.js` from the plugin's `assets/` directory
   - Persist artifacts as each phase completes
 
 ## Phase 1: Deep Research
@@ -249,7 +249,7 @@ Before writing the spec, ensure the directory structure exists:
    ```
 3. If `.specs/` doesn't exist yet, also create `registry.md` and the
    `.specs/assets/` directory (with `spec-styles.css` + `spec-runtime.js`
-   copied from the plugin's `examples/`).
+   copied from the plugin's `assets/`).
 
 If directory creation fails because the environment is still read-only, ask
 the user to exit plan mode (Shift+Tab) and rerun `/specmint-core-html:forge`.

@@ -10,6 +10,8 @@ Spec Mint Core HTML replaces ephemeral AI coding plans with persistent, resumabl
 
 Works with Claude Code (as a plugin), Codex, Cursor, Windsurf, Cline, Gemini CLI, and any AI coding tool that can read files.
 
+![Spec preview — Team Invites](assets/preview.png)
+
 ## The Problem
 
 Every AI coding tool has some version of "plan mode" — think before you code. But these plans are ephemeral. They live in the conversation context. Close the terminal, start a new session, and the plan is gone. There's no way to:
@@ -64,7 +66,7 @@ local dogfooding. In consumer projects, you can choose to commit `.specs/`.
 
 ### A SPEC.html Looks Like This (Sketch)
 
-Open `examples/SPEC.html` in a browser to see a real spec render. Below is the structure at a glance:
+The screenshot above is a real `SPEC.html` rendered in a browser. Below is the structure at a glance:
 
 - **Header card**: title, status pill, priority chip, created/updated dates, tags, scorecard (Tasks / Phases / Acceptance / Blockers)
 - **Acceptance Criteria**: checklist with custom-styled checkboxes, amber `Needs clarification` chips
@@ -343,8 +345,8 @@ specmint-core-html/
 │   ├── wireframe-library.md        # Wireframe mockup patterns (.wf-* primitives)
 │   ├── mockup-library.md           # Hi-fi mockup patterns (.ui-* components)
 │   └── command-contracts.md        # Behavioral contract checklist for commands/skill
-├── examples/
-│   ├── SPEC.html                   # Full UI-rich exemplar (team-invites)
+├── assets/
+│   ├── preview.png                 # README screenshot of a rendered SPEC.html
 │   ├── spec-styles.css             # Shared design system — copied to .specs/assets/ on first forge
 │   └── spec-runtime.js             # Progress deriver + Mermaid/Prism init + SVG annotation arrows
 ├── specmint-workspace/             # Eval scaffold (gitignored)

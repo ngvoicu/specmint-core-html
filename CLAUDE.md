@@ -28,14 +28,14 @@ Topics relevant to this repo: specmint-core-html overview, HTML format rationale
 
 The plugin has two conceptual layers:
 
-**Plugin layer** (this repo) — `commands/*.md` (one file per slash command), `agents/researcher.md` (Opus-model deep research subagent), `.claude-plugin/` and `.cursor-plugin/` (metadata), `references/*` (format reference, edit recipes, validator, mockup libraries), `examples/*` (the canonical SPEC.html + shared `spec-styles.css` + `spec-runtime.js`). Claude Code reads these markdown files as behavioral instructions.
+**Plugin layer** (this repo) — `commands/*.md` (one file per slash command), `agents/researcher.md` (Opus-model deep research subagent), `.claude-plugin/` and `.cursor-plugin/` (metadata), `references/*` (format reference, edit recipes, validator, mockup libraries), `assets/*` (shared `spec-styles.css` + `spec-runtime.js` copied into consuming projects, plus the README `preview.png`). Claude Code reads these markdown files as behavioral instructions.
 
 **Data layer** (consuming project) — `.specs/` directory created in the consuming project root (not here). Layout:
 
 ```
 .specs/
 ├── assets/
-│   ├── spec-styles.css    # Shared design system — copied once from plugin's examples/
+│   ├── spec-styles.css    # Shared design system — copied once from plugin's assets/
 │   └── spec-runtime.js    # Progress deriver + Mermaid/Prism init + SVG annotation arrows
 ├── registry.md            # Markdown table — denormalized index across specs
 └── <spec-id>/
@@ -54,7 +54,7 @@ The plugin has two conceptual layers:
 | Source of truth | Must match |
 |----------------|------------|
 | `references/spec-format.md` | Spec format rules in `SKILL.md` |
-| `examples/SPEC.html` + `spec-styles.css` + `spec-runtime.js` | `references/html-template.html` and `references/edit-recipes.md` |
+| `assets/spec-styles.css` + `assets/spec-runtime.js` | `references/html-template.html` and `references/edit-recipes.md` |
 | `commands/*.md` | Behavioral contracts in `references/command-contracts.md` |
 
 `skills/specmint-core-html/SKILL.md` is a symlink to `../../SKILL.md` — never replace it with a real file.
@@ -75,12 +75,12 @@ The plugin has two conceptual layers:
 - Edit `references/command-contracts.md` when you change command contracts; this is the review checklist.
 
 ### Format changes
-- Edit `examples/spec-styles.css` / `spec-runtime.js` / `SPEC.html` to change the rendered visual / runtime behavior. After any visual change, open `examples/SPEC.html` in a browser and eyeball — or serve via `python3 -m http.server` in `examples/` to view at `http://localhost:8000/SPEC.html`.
-- After any spec-format change, run the validate recipe on `examples/SPEC.html`:
+- Edit `assets/spec-styles.css` / `assets/spec-runtime.js` to change rendered visual / runtime behavior for every generated `SPEC.html`. To eyeball changes, dogfood the plugin in a disposable consumer project — `claude plugin add /path/to/specmint-core-html`, run `/forge`, then open the generated `.specs/<id>/SPEC.html`. The README screenshot at `assets/preview.png` is the reference render.
+- After any spec-format change, run the validate recipe on a generated `SPEC.html`:
   ```bash
   python3 -c "
   import re, sys, json
-  h = open('examples/SPEC.html').read()
+  h = open('.specs/<id>/SPEC.html').read()
   m = re.search(r'<script[^>]*id=\"spec-meta\"[^>]*>(.+?)</script>', h, re.S)
   assert m; json.loads(m.group(1))
   o = re.findall(r'<!--\s*region:(\w+)\s*-->', h); c = re.findall(r'<!--\s*endregion:(\w+)\s*-->', h)

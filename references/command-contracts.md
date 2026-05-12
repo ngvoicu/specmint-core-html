@@ -38,7 +38,7 @@ This file defines functional contracts for `commands/*.md` and the universal
 3. Forge must not run in plan mode; if plan mode is active, require exit
    before continuing.
 4. If `.specs/assets/` does not exist, initialize it (copy `spec-styles.css`
-   and `spec-runtime.js` from the plugin's `examples/` directory).
+   and `spec-runtime.js` from the plugin's `assets/` directory).
 5. Output scope is `.specs/` artifacts only (`research-*.md`,
    `interview-*.md`, `SPEC.html`, `registry.md` updates, assets on first run).
 6. After approval, handoff to `/specmint-core-html:implement` instead of
@@ -129,6 +129,6 @@ This file defines functional contracts for `commands/*.md` and the universal
    warnings.
 3. Paths referenced in docs and templates exist (excluding placeholder paths).
 4. Command contracts in this file still match `commands/*.md` and `SKILL.md`.
-5. `examples/SPEC.html` validates with `references/validate.md`.
-6. `examples/spec-styles.css` and `examples/spec-runtime.js` exist and are
-   referenced from `examples/SPEC.html`.
+5. `assets/spec-styles.css` and `assets/spec-runtime.js` exist and are
+   distributed to consumer projects' `.specs/assets/` on first forge.
+6. `references/html-template.html` validates with `references/validate.md`.

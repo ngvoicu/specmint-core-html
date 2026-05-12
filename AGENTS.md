@@ -18,8 +18,8 @@ For architectural context across the Mint family (core vs TDD, core-vs-core-html
   - `wireframe-library.md` — wireframe mockup patterns built on `.wf-*` primitives.
   - `mockup-library.md` — hi-fi mockup patterns built on `.ui-*` components.
   - `command-contracts.md` — behavioral contract checklist for commands and SKILL.md.
-- `examples/`:
-  - `SPEC.html` — ground-truth UI-rich exemplar (team-invites). Open in a browser to see what specs render as.
+- `assets/`:
+  - `preview.png` — README screenshot of a real rendered `SPEC.html`.
   - `spec-styles.css` — shared design system (gets copied into `.specs/assets/` on first forge in any consuming project).
   - `spec-runtime.js` — progress deriver + Mermaid/Prism init + SVG annotation arrows.
 - `SKILL.md`: universal, cross-tool skill instructions (Codex, Cursor, Windsurf, Cline, Gemini CLI).
@@ -30,8 +30,8 @@ For architectural context across the Mint family (core vs TDD, core-vs-core-html
 
 - `rg --files`: fast inventory of repository files before editing.
 - `sed -n '1,160p' commands/forge.md`: inspect command content in the terminal.
-- `python3 -m http.server 8000` (run inside `examples/`): serve the exemplar at <http://localhost:8000/SPEC.html> to eyeball visual changes.
-- `python3 -c "import re,json; h=open('examples/SPEC.html').read(); m=re.search(r'<script[^>]*id=\"spec-meta\"[^>]*>(.+?)</script>',h,re.S); json.loads(m.group(1)); o=re.findall(r'<!--\\s*region:(\\w+)\\s*-->',h); c=re.findall(r'<!--\\s*endregion:(\\w+)\\s*-->',h); assert sorted(o)==sorted(c); print('OK')"`: validate exemplar structure (full recipe in `references/validate.md`).
+- `python3 -m http.server 8000` (run inside a consumer project's `.specs/<id>/`): serve a real generated `SPEC.html` at <http://localhost:8000/SPEC.html> to eyeball visual changes. The README screenshot at `assets/preview.png` is the reference render.
+- `python3 -c "import re,json,sys; p=sys.argv[1]; h=open(p).read(); m=re.search(r'<script[^>]*id=\"spec-meta\"[^>]*>(.+?)</script>',h,re.S); json.loads(m.group(1)); o=re.findall(r'<!--\\s*region:(\\w+)\\s*-->',h); c=re.findall(r'<!--\\s*endregion:(\\w+)\\s*-->',h); assert sorted(o)==sorted(c); print('OK')" path/to/SPEC.html`: validate a generated SPEC.html (full recipe in `references/validate.md`).
 - `npx skills add ngvoicu/specmint-core-html -g -a codex`: smoke-test universal-skill installation flow.
 - `git log --oneline -n 10`: review recent commit style before committing.
 
@@ -53,10 +53,10 @@ This repository has no compile/build pipeline; Markdown, JSON, HTML, CSS, and JS
 
 - No automated test suite currently exists in this repository.
 - Perform manual validation for each change:
-  - Run the validate recipe on `examples/SPEC.html` after any format change.
+  - Run the validate recipe on a generated `.specs/<id>/SPEC.html` after any format change.
   - Verify `.claude-plugin/*.json` and `.cursor-plugin/*.json` stay valid JSON.
   - Confirm referenced paths/files exist.
-  - Open `examples/SPEC.html` in a browser after any visual change (CSS / runtime / template).
+  - Dogfood the plugin in a disposable consumer project after any visual change (CSS / runtime / template) and open the generated `SPEC.html` in a browser.
   - Smoke-test install/use flow in a disposable project when command behavior changes.
 - If you change spec-format rules, update `SKILL.md`, `references/spec-format.md`, and `references/edit-recipes.md` in the same PR.
 
