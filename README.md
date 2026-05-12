@@ -93,16 +93,6 @@ Everything: all 8 slash commands (`/forge`, `/implement`, `/resume`, `/pause`, `
 /plugin install specmint-core-html
 ```
 
-Or manually:
-```bash
-git clone https://github.com/ngvoicu/specmint-core-html.git ~/.claude/plugins/specmint-core-html
-```
-
-After install, just run:
-```
-/specmint-core-html:forge "add user authentication"
-```
-
 ### Path 2: Quick Setup via npx (Any Tool)
 
 Installs the SKILL.md into your tool's skill/instruction directory so it knows how to read, update, and resume specs from `.specs/`.
@@ -224,30 +214,6 @@ gemini "resume"
 gemini "pause and save context"
 gemini "switch to auth-system"
 ```
-
-## Multi-Tool Support
-
-The spec format is plain HTML (text, editable in any tool). Claude Code, Codex, Cursor, Windsurf, Cline, and Gemini CLI can all work on the same `.specs/` directory.
-
-### Setting Up Other Tools
-
-Most tools can be set up via npx (see [Path 2](#path-2-quick-setup-via-npx-any-tool) above):
-
-```bash
-npx skills add ngvoicu/specmint-core-html -g -a <tool>
-```
-
-For manual setup, see the snippet format in [SKILL.md](SKILL.md).
-
-### Cross-Tool Sync
-
-All tools share the same files:
-- **Task codes** — `[AUTH-03]` is the same task everywhere
-- **`data-status` attributes** — Every tool reads `pending`, `in-progress`, `completed`, `blocked` the same way
-- **Region sentinels** — `<!-- region:phases -->` / `<!-- endregion:phases -->` anchor surgical edits
-- **Decision Log + Deviations** — Cross-session history
-
-**One rule:** Don't run two tools on the same spec simultaneously. Different specs in parallel is fine.
 
 ## The Forge Workflow (Detailed)
 
