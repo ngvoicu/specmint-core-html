@@ -37,8 +37,10 @@ This file defines functional contracts for `commands/*.md` and the universal
    `.specs/<id>/SPEC.html` and registry).
 3. Forge must not run in plan mode; if plan mode is active, require exit
    before continuing.
-4. If `.specs/assets/` does not exist, initialize it (copy `spec-styles.css`
-   and `spec-runtime.js` from the plugin's `assets/` directory).
+4. Refresh `.specs/assets/` on every forge: copy `spec-styles.css` and
+   `spec-runtime.js` from the plugin's `assets/` directory, **overwriting
+   any existing files**. The runtime is plugin-managed; overwrite-on-forge
+   ensures existing projects pick up rendering fixes.
 5. Output scope is `.specs/` artifacts only (`research-*.md`,
    `interview-*.md`, `SPEC.html`, `registry.md` updates, assets on first run).
 6. After approval, handoff to `/specmint-core-html:implement` instead of

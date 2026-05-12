@@ -78,7 +78,7 @@ use the markdown-flavored variant for those specs.
 | Situation | Required behavior |
 |-----------|-------------------|
 | `.specs/registry.md` missing | If `.specs/` exists, report "No registry yet" and offer to initialize it. If `.specs/` is missing, report "No specs yet" and continue normally. |
-| `.specs/assets/` missing when a SPEC.html is being written | Initialize it — copy `spec-styles.css` and `spec-runtime.js` from the plugin's `assets/` directory (or the equivalent location your tool uses for skill files). |
+| `.specs/assets/` missing or stale when a SPEC.html is being written | Refresh it — copy `spec-styles.css` and `spec-runtime.js` from the plugin's `assets/` directory into `.specs/assets/`, **overwriting any existing files**. The runtime ships rendering fixes (Mermaid, diagram fullscreen modal, code highlighting) and must stay in sync with the plugin version. |
 | Malformed registry row | Skip malformed row, emit warning with row text, continue parsing remaining rows. |
 | Multiple `active` rows | Warn user. Pick the row with the newest `Updated` date for this run. On next write, normalize to a single active spec. |
 | Registry row exists but `.specs/<id>/SPEC.html` missing | Warn and continue. Keep row visible in list/status with `(SPEC.html missing)`. |
@@ -260,12 +260,16 @@ separately, after the user reviews and approves the spec.
    ```bash
    mkdir -p .specs/<id> .specs/assets
    ```
-4. **Initialize the shared assets if they don't already exist.** Copy
-   `spec-styles.css` and `spec-runtime.js` from the plugin's bundled
-   `assets/` directory into `.specs/assets/`. AI tools should know the
-   plugin install location; for Claude Code plugins it is typically
-   `~/.claude/plugins/specmint-core-html/assets/`. These files are
-   written once and shared by every spec in the project.
+4. **Refresh the shared assets.** Copy `spec-styles.css` and
+   `spec-runtime.js` from the plugin's bundled `assets/` directory into
+   `.specs/assets/`, **overwriting any existing files**. The runtime is
+   plugin-managed and never hand-edited — it ships rendering fixes
+   (Mermaid initialization, click-to-fullscreen diagram modal with
+   wheel-zoom + drag-pan, PrismJS code highlighting, SVG annotation
+   arrows) that must stay in sync with the plugin version. AI tools
+   should know the plugin install location; for Claude Code plugins it
+   is typically `~/.claude/plugins/specmint-core-html/assets/`. These
+   files are shared by every spec in the project.
 5. If `.specs/registry.md` doesn't exist, initialize it:
    ```markdown
    # Spec Registry
