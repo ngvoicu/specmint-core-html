@@ -19,9 +19,10 @@ For architectural context across the Mint family (core vs TDD, core-vs-core-html
   - `mockup-library.md` — hi-fi mockup patterns built on `.ui-*` components.
   - `command-contracts.md` — behavioral contract checklist for commands and SKILL.md.
 - `assets/`:
-  - `preview.png` — README screenshot of a real rendered `SPEC.html`.
-  - `spec-styles.css` — shared design system (gets copied into `.specs/assets/` on first forge in any consuming project).
-  - `spec-runtime.js` — progress deriver + Mermaid/Prism init + SVG annotation arrows.
+  - `spec-styles.css` — shared design system (gets copied into `.specs/assets/` on every forge in any consuming project).
+  - `spec-runtime.js` — progress deriver + Mermaid/Prism init + SVG annotation arrows + diagram fullscreen modal + full-spec validator.
+
+  The reference render of a generated `SPEC.html` lives at <https://specmint.io/#gallery> (instead of an embedded screenshot in this repo).
 - `SKILL.md`: universal, cross-tool skill instructions (Codex, Cursor, Windsurf, Cline, Gemini CLI).
 - `specmint-workspace/`: eval scaffold (gitignored). Contains `evals/evals.json` with placeholder TODO assertions — not yet runnable.
 - `.specs/`: local dogfooding output for specs (gitignored).
@@ -30,7 +31,7 @@ For architectural context across the Mint family (core vs TDD, core-vs-core-html
 
 - `rg --files`: fast inventory of repository files before editing.
 - `sed -n '1,160p' commands/forge.md`: inspect command content in the terminal.
-- `python3 -m http.server 8000` (run inside a consumer project's `.specs/<id>/`): serve a real generated `SPEC.html` at <http://localhost:8000/SPEC.html> to eyeball visual changes. The README screenshot at `assets/preview.png` is the reference render.
+- `python3 -m http.server 8000` (run inside a consumer project's `.specs/<id>/`): serve a real generated `SPEC.html` at <http://localhost:8000/SPEC.html> to eyeball visual changes. The reference render lives at <https://specmint.io/#gallery>.
 - `python3 -c "import re,json,sys; p=sys.argv[1]; h=open(p).read(); m=re.search(r'<script[^>]*id=\"spec-meta\"[^>]*>(.+?)</script>',h,re.S); json.loads(m.group(1)); o=re.findall(r'<!--\\s*region:(\\w+)\\s*-->',h); c=re.findall(r'<!--\\s*endregion:(\\w+)\\s*-->',h); assert sorted(o)==sorted(c); print('OK')" path/to/SPEC.html`: validate a generated SPEC.html (full recipe in `references/validate.md`).
 - `npx skills add ngvoicu/specmint-core-html -g -a codex`: smoke-test universal-skill installation flow.
 - `git log --oneline -n 10`: review recent commit style before committing.

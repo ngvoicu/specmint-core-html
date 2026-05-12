@@ -10,7 +10,7 @@ Spec Mint Core HTML replaces ephemeral AI coding plans with persistent, resumabl
 
 Works with Claude Code (as a plugin), Codex, Cursor, Windsurf, Cline, Gemini CLI, and any AI coding tool that can read files.
 
-![Spec preview — Team Invites](assets/preview.png)
+**[→ See a rendered SPEC.html](https://specmint.io/#gallery)** on specmint.io — Team Invites exemplar with Mermaid diagrams, code diffs, and hi-fi UI mockups.
 
 ## The Problem
 
@@ -300,9 +300,8 @@ specmint-core-html/
 │   ├── mockup-library.md           # Hi-fi mockup patterns (.ui-* components)
 │   └── command-contracts.md        # Behavioral contract checklist for commands/skill
 ├── assets/
-│   ├── preview.png                 # README screenshot of a rendered SPEC.html
-│   ├── spec-styles.css             # Shared design system — copied to .specs/assets/ on first forge
-│   └── spec-runtime.js             # Progress deriver + Mermaid/Prism init + SVG annotation arrows
+│   ├── spec-styles.css             # Shared design system — copied to .specs/assets/ on every forge
+│   └── spec-runtime.js             # Progress deriver + Mermaid/Prism init + diagram modal + validator
 ├── specmint-workspace/             # Eval scaffold (gitignored)
 │   └── evals/evals.json            # Placeholder TODO assertions — not yet runnable
 ├── skills/

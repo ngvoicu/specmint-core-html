@@ -28,7 +28,7 @@ Topics relevant to this repo: specmint-core-html overview, HTML format rationale
 
 The plugin has two conceptual layers:
 
-**Plugin layer** (this repo) — `commands/*.md` (one file per slash command), `agents/researcher.md` (Opus-model deep research subagent), `.claude-plugin/` and `.cursor-plugin/` (metadata), `references/*` (format reference, edit recipes, validator, mockup libraries), `assets/*` (shared `spec-styles.css` + `spec-runtime.js` copied into consuming projects, plus the README `preview.png`). Claude Code reads these markdown files as behavioral instructions.
+**Plugin layer** (this repo) — `commands/*.md` (one file per slash command), `agents/researcher.md` (Opus-model deep research subagent), `.claude-plugin/` and `.cursor-plugin/` (metadata), `references/*` (format reference, edit recipes, validator, mockup libraries), `assets/*` (shared `spec-styles.css` + `spec-runtime.js` copied into consuming projects). The rendered preview lives at <https://specmint.io/#gallery>. Claude Code reads these markdown files as behavioral instructions.
 
 **Data layer** (consuming project) — `.specs/` directory created in the consuming project root (not here). Layout:
 
@@ -75,7 +75,7 @@ The plugin has two conceptual layers:
 - Edit `references/command-contracts.md` when you change command contracts; this is the review checklist.
 
 ### Format changes
-- Edit `assets/spec-styles.css` / `assets/spec-runtime.js` to change rendered visual / runtime behavior for every generated `SPEC.html`. To eyeball changes, dogfood the plugin in a disposable consumer project — `claude plugin add /path/to/specmint-core-html`, run `/forge`, then open the generated `.specs/<id>/SPEC.html`. The README screenshot at `assets/preview.png` is the reference render.
+- Edit `assets/spec-styles.css` / `assets/spec-runtime.js` to change rendered visual / runtime behavior for every generated `SPEC.html`. To eyeball changes, dogfood the plugin in a disposable consumer project — `claude plugin add /path/to/specmint-core-html`, run `/forge`, then open the generated `.specs/<id>/SPEC.html`. The reference render lives at <https://specmint.io/#gallery>.
 - After any spec-format change, run the validate recipe on a generated `SPEC.html`:
   ```bash
   python3 -c "
