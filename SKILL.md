@@ -446,28 +446,41 @@ able to implement the feature without guessing. Include:
   Unified diff by default; `data-view="split"` for changes >30 lines,
   multi-hunk, or where the before/after comparison itself is the point.
 - **UI Mockups** — One or more `<figure class="mockup">` blocks, using
-  wireframe (`mockup--wireframe`) or hi-fi (`mockup--hifi`) per the
-  fidelity decided in the interview. Omit entirely if
-  `mockup-fidelity: none`.
+  hi-fi (`mockup--hifi`) by default. Reserve wireframe
+  (`mockup--wireframe`) for the rare case where the spec is
+  intentionally structural-only with no real labels yet. Omit
+  entirely if `mockup-fidelity: none`.
 
-  **MUST compose from the `.wf-*` (wireframe) or `.ui-*` (hi-fi)
-  component classes defined in `assets/spec-styles.css`.** Before
-  authoring any mockup, **read `references/wireframe-library.md`**
-  (wireframe primitives + canonical patterns: App shell, Form,
-  Empty state, Table page, Modal, Stepper/wizard, Detail/master,
-  Settings panel, Card grid) or **`references/mockup-library.md`**
-  (hi-fi components: Login form, Dashboard, Data table, Empty state,
-  Modal dialog, Toast, Form with validation, Multi-step wizard,
-  Alert+tabs, Settings panel, Card grid).
+  **Default to hi-fi** — almost every spec has concrete copy (button
+  text, column headers, row data, status badges, placeholder hints).
+  The moment you have real text to show, use the `.ui-*` components
+  in `references/mockup-library.md`. They render as real-looking UI
+  (real buttons, real inputs, real tables, real tags), so users can
+  evaluate the design.
+
+  **The wireframe library (`.wf-*`) is for empty skeletons only.**
+  `.wf-heading`, `.wf-text`, `.wf-pill`, `.wf-input` are skeleton
+  bars; they render correctly only when the tag is empty. If you
+  have real content (a heading like "Sites", a label like "AERE1",
+  a status like "active"), you are authoring hi-fi — switch to
+  `.ui-*` for that block. Mixing real text inside `.wf-text` /
+  `.wf-heading` is the #1 cause of "ugly grey blob behind text"
+  bug reports.
+
+  Read `references/mockup-library.md` (`.ui-*` patterns: Login form,
+  Dashboard, Data table, Empty state, Modal dialog, Toast, Form with
+  validation, Multi-step wizard, Alert+tabs, Settings panel, Card
+  grid) before authoring. `references/wireframe-library.md` is the
+  fallback for structural-only sketches.
 
   **Never use ASCII art inside `<figure class="mockup">`** — no boxes
   drawn with `+`, `|`, `-`; no pipe-delimited tables; no monospace
-  pseudo-diagrams. If you need a grid, use `.wf-table` (with
-  `style="--cols: N;"`) or the hi-fi `.ui-table` patterns. If you need
-  cards, use `.wf-card`. If a layout you need isn't in the library,
-  compose new structure from the primitives — do **not** fall back to
-  ASCII. ASCII inside mockups is treated as a render bug by the
-  validator and surfaces as a warning.
+  pseudo-diagrams. If you need a grid, use `.ui-table` (real
+  `<table><thead><tbody>` markup); if you need cards, use `.ui-card`.
+  If a layout you need isn't in the library, compose new structure
+  from the primitives — do **not** fall back to ASCII. ASCII inside
+  mockups is treated as a render bug by the validator and surfaces
+  as a warning.
 - **Decision Log** — Empty initially; populated as work progresses.
 - **Deviations** — Empty initially; populated during implementation when
   behavior diverges from the spec.
