@@ -1,0 +1,89 @@
+{
+  "skill_name": "specmint-core-html",
+  "evals": [
+    {
+      "id": 1,
+      "name": "forge-cold-start",
+      "prompt": "I'm working in a fresh Node.js + Express + TypeScript project (src/, tests/, package.json present). Create a Spec Mint spec for adding token-bucket rate limiting to the /api/auth/login endpoint. Use the full forge workflow.",
+      "expected_output": "Three files in .specs/<spec-id>/: SPEC.html, research-01.md, interview-01.md. Registry.md updated. SPEC.html is valid HTML with single-line spec-meta JSON in canonical key order, every region paired (opener/endregion), at least one Mermaid diagram with quoted aliases/labels, code-diff previews, no ASCII art. Validator (`specmintValidate()`) reports 0 errors.",
+      "expectations": [
+        "`.specs/<spec-id>/SPEC.html` exists and the file content begins with `<!doctype html>` (case-insensitive)",
+        "`.specs/<spec-id>/research-01.md` exists and is non-empty (>500 characters of actual research notes, not a stub)",
+        "`.specs/<spec-id>/interview-01.md` exists and contains at least one user-answered question",
+        "`.specs/<spec-id>/SPEC.html` contains a `<script type=\"application/json\" id=\"spec-meta\">` element whose JSON parses",
+        "spec-meta JSON keys appear in canonical order: id, title, status, created, updated, priority, tags, mockup-fidelity",
+        "Every `<!-- region:NAME -->` in SPEC.html has a matching `<!-- endregion:NAME -->`",
+        "At least one `<pre class=\"mermaid\">` block exists inside a `<figure class=\"diagram\">`",
+        "Every participant in any sequenceDiagram has its alias wrapped in double quotes (zero unquoted `participant X as something(with parens)` lines)",
+        "`.specs/assets/spec-styles.css` and `.specs/assets/spec-runtime.js` exist (copied from plugin assets/)",
+        "Registry.md contains a row for the new spec with status=active"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "resume-existing-spec",
+      "prompt": "Resume the active spec in this project.",
+      "expected_output": "AI reads .specs/registry.md, identifies the active spec, opens its SPEC.html, finds the first `<li class=\"task\" data-status=\"pending\">` in the in-progress phase, and announces it without modifying any state. Does NOT swap data-status or write to disk.",
+      "files": ["evals/fixtures/specs-fixture-active.tar.gz"],
+      "expectations": [
+        "AI's response identifies the spec's title and ID from the registry",
+        "AI's response names the specific task code (e.g., [AUTH-06]) of the first pending task",
+        "AI reports the current phase by name (not just number)",
+        "No `data-status` attribute in SPEC.html changed from before to after the response",
+        "No new files written under `.specs/<id>/`"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "pause-and-switch",
+      "prompt": "Pause the active spec and switch to the spec called 'api-refactor'. Report what changed.",
+      "expected_output": "Both the current spec's status and registry row become 'paused'. The api-refactor spec's status and row become 'active'. Pause happens at a task boundary (no half-edits). Decision Log of the paused spec gets a 'Session paused on <date>' entry if non-trivial work happened.",
+      "files": ["evals/fixtures/specs-two-active.tar.gz"],
+      "expectations": [
+        "The previously active spec's `<script id=\"spec-meta\">` shows `\"status\":\"paused\"` after the action",
+        "The api-refactor spec's `<script id=\"spec-meta\">` shows `\"status\":\"active\"` after the action",
+        "`.specs/registry.md` has exactly one row with `active` status after the action",
+        "The validate recipe (`python3 -c ...`) returns exit code 0 on both SPEC.html files after the swap",
+        "AI reports both transitions in a single response"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "mermaid-always-quote",
+      "prompt": "In the Architecture section of this SPEC.html, add a sequenceDiagram showing a request through Frontend (React, /sites) -> Backend API (port 8080) -> PostgreSQL, with arrows labeled 'POST /api/sites (body)' and 'INSERT INTO sites'. Then run specmintValidate() and confirm zero parse errors.",
+      "expected_output": "The new <pre class=\"mermaid\"> renders without errors. Every participant alias is in double quotes (including 'Frontend (React, /sites)' which has parens AND a comma — exactly the pattern that has broken parses before). Every message label is in double quotes. specmintValidate() reports zero [mermaid] errors.",
+      "files": ["evals/fixtures/spec-with-architecture-region.html"],
+      "expectations": [
+        "The new sequenceDiagram block contains exactly 3 `participant` lines",
+        "Every `participant` line matches the regex `participant \\S+ as \"[^\"]+\"` (alias wrapped in double quotes)",
+        "Every arrow line matches `->>` or `-->>` followed by `: \"...\"` (label wrapped in double quotes)",
+        "Running `mermaid.parse(src)` on the new block source resolves without throwing",
+        "After running `specmintValidate()` in the page console, the returned array contains zero objects with `area === 'mermaid'`"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "code-preview-density",
+      "prompt": "Forge a spec for a 5-phase migration from REST to GraphQL across an existing API + frontend (3 modules touched). Include the right number of code-diff previews per the SKILL.md sizing guidance.",
+      "expected_output": "Per the new sizing rule (medium spec = 5-10 previews), the spec should ship at least 5 and at most 12 `<figure class=\"code-diff\">` blocks. Categories represented: new public interface/contract, new data model/schema, non-trivial business logic, before→after of a significant refactor. No boilerplate previews (imports-only diffs, route-registration-only).",
+      "expectations": [
+        "SPEC.html contains between 5 and 12 `<figure class=\"code-diff\">` elements",
+        "At least one code-diff has `data-language` set to a non-empty value",
+        "No code-diff figure contains ONLY import/require statement changes (boilerplate filter)",
+        "At least one code-diff shows a before→after of a function signature or type change"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "mockup-no-ascii",
+      "prompt": "Forge a spec for an admin dashboard that lists pending invites, with `mockup-fidelity: wireframe`. Include at least one mockup of the dashboard.",
+      "expected_output": "The UI Mockups section contains one or more `<figure class=\"mockup mockup--wireframe\">` blocks composed from `.wf-*` primitives (`.wf-frame`, `.wf-row`, `.wf-table`, `.wf-card`, etc.). Zero ASCII-art boxes drawn with `+`, `-`, `|`. Zero `<pre>` elements inside any `figure.mockup`.",
+      "expectations": [
+        "SPEC.html contains at least one `<figure class=\"mockup\">` element",
+        "Each mockup figure contains at least one `<div class=\"wf-frame\">` or equivalent .wf-* primitive (not just text)",
+        "Zero `<pre>` elements appear inside `<figure class=\"mockup\">` (the runtime validator's mockup check returns 0 hits)",
+        "Combined occurrences of `+--` and `|--` substrings inside any `figure.mockup` text is 0"
+      ]
+    }
+  ]
+}

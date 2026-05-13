@@ -24,7 +24,7 @@ For architectural context across the Mint family (core vs TDD, core-vs-core-html
 
   The reference render of a generated `SPEC.html` lives at <https://specmint.io/#gallery> (instead of an embedded screenshot in this repo).
 - `SKILL.md`: universal, cross-tool skill instructions (Codex, Cursor, Windsurf, Cline, Gemini CLI).
-- `specmint-workspace/`: eval scaffold (gitignored). Contains `evals/evals.json` with placeholder TODO assertions — not yet runnable.
+- `evals/evals.json`: 6 real eval scenarios with 33 verifiable expectations (tracked). Run via `/skill-creator improve` (Anthropic's official skill-creator plugin) in a fresh Claude Code session. Run outputs land in a gitignored `specmint-core-html-workspace/` sibling directory.
 - `.specs/`: local dogfooding output for specs (gitignored).
 
 ## Build, Test, and Development Commands

@@ -96,7 +96,16 @@ The plugin has two conceptual layers:
 
 ## Eval Infrastructure
 
-Eval workspace at `specmint-workspace/` (gitignored). Currently contains a **placeholder scaffold** — `specmint-workspace/evals/evals.json` lists 6 evals (forge, resume, spec-quality, implement, asset-init, researcher-spawn) with TODO assertion bodies. The structure is in place; the assertion implementations are a follow-up.
+Real evals live at `evals/evals.json` — 6 scenarios with 33 verifiable expectations covering: forge cold-start, resume from an existing spec, pause-and-switch, Mermaid always-quote rule, code-preview density, no-ASCII mockups. See the file for prompts and per-expectation grading criteria.
+
+To run the full benchmark pipeline (with-skill vs baseline runs, grading, viewer):
+
+```
+/plugin install skill-creator                    # one-time
+/skill-creator improve                            # in a fresh session, point at this plugin
+```
+
+skill-creator spawns parallel test runs, scores each expectation, and produces a benchmark + diff against any previous iteration. Run results land in a sibling `specmint-core-html-workspace/` directory (gitignored).
 
 ## Distribution
 
