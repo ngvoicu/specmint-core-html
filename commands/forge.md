@@ -369,7 +369,21 @@ Before presenting the spec to the user, review it for coherence and logic:
 12. **Ambiguity check**: For each task, ask "could an implementer complete
     this without asking me a question?" If no, add detail until yes.
 13. **Run the validate recipe** (`references/validate.md`) — confirm the
-    file parses cleanly. Re-run after every subsequent edit.
+    file parses cleanly (JSON + region pairing). Re-run after every
+    subsequent edit.
+14. **Run the browser validator** (`specmintValidate()`) — required gate.
+    Serve `.specs/<id>/` (e.g., `python3 -m http.server` in that dir or
+    open the file in a browser), open DevTools console, run
+    `await specmintValidate()`, and **fix every `[mermaid]` error**
+    before presenting. The validator surfaces:
+    - Mermaid blocks that fail `mermaid.parse()` (the source is preserved
+      on `data-mermaid-source` of the failing `<pre>` — read it, fix the
+      authoring issue per SKILL.md's Mermaid rules, reload, re-validate)
+    - Duplicate task codes
+    - Missing recommended regions
+    - HTML entity contamination inside Mermaid sources
+
+    A spec with any `figure.diagram--error` is not ready to present.
 
 **Quality check before presenting:**
 

@@ -482,26 +482,98 @@ able to implement the feature without guessing. Include:
   `architecture-beta`, `c4Context`, `treemap`.
 - Include at least one diagram per spec (architecture, data flow, or state).
 
-**Mermaid authoring rules (avoid the common parse-error pitfalls):**
-- **Use raw characters, never HTML entities**, inside `<pre class="mermaid">`.
-  Write `A --> B`, `A & B`, `"foo"` — not `A --&gt; B`, `A &amp; B`,
-  `&quot;foo&quot;`. Mermaid parses the pre's text content as plain text;
-  entity strings would be read literally and break parsing.
-- **Quote any label containing `:` `(` `)` `,` or spaces with special meaning**.
-  In flowcharts: `A["My Node (with parens)"]`. In sequence diagrams:
-  `A->>B: "label: with colon"`. Unquoted colons in flowchart node labels
-  are the most common cause of "got 'NEWLINE'" parse errors.
-- **Keep participant/node IDs identifier-safe** — letters, digits,
-  underscores. Use `participant API as "API service"` aliases for display
-  names with spaces or punctuation.
-- **Terminate every arrow with a label or node** — bare `A -->` at end of
-  line is a syntax error.
-- **One statement per line**; do not run two flow edges together with `;`.
-- After writing or editing diagrams, **run the validator** to confirm
-  every block parses: open the rendered `SPEC.html` in a browser and call
-  `specmintValidate()` in the page console. Failed diagrams are marked
-  with `figure.diagram--error` and their source is preserved on
-  `data-mermaid-source` for inspection.
+**Mermaid authoring rules — read every time, do not skim.**
+
+Every parse error this skill has ever produced has the same root cause:
+the author judged a label or alias "didn't need quoting" and was wrong.
+The rules below are written to remove that judgment call entirely.
+
+1. **No HTML entities inside `<pre class="mermaid">`.** Write `A --> B`,
+   `A & B`, `"foo"` — not `A --&gt; B`, `A &amp; B`, `&quot;foo&quot;`.
+   Mermaid parses pre-content as plain text; entity strings are read
+   literally and break parsing.
+
+2. **ALWAYS quote participant aliases** in `sequenceDiagram` — every
+   single one, even if it looks "safe". The cost of an extra `"…"` is
+   zero; the cost of a parse error is a broken render. Templates:
+   ```
+   participant U as "User"
+   participant API as "Backend API (port 8080)"
+   participant DB as "PostgreSQL"
+   ```
+   ❌ BAD — `participant API as Backend API (port 8080)` (unquoted parens)
+   ✅ GOOD — `participant API as "Backend API (port 8080)"`
+
+3. **ALWAYS quote message labels** in `sequenceDiagram` — every single
+   arrow's label. The lexer treats `:` `(` `)` `,` `;` as syntax tokens
+   in the unquoted form. Templates:
+   ```
+   U->>API: "POST /endpoint (body)"
+   API->>DB: "SELECT message, site_macro, email_template"
+   DB-->>API: "SQL stream (application/sql;charset=UTF-8)"
+   ```
+   ❌ BAD — `U->>API: POST /endpoint (body)` (unquoted parens)
+   ❌ BAD — `API->>DB: SELECT col1, col2, col3` (unquoted commas)
+   ✅ GOOD — both wrapped in double quotes
+
+4. **ALWAYS quote `flowchart` node labels that aren't pure identifiers.**
+   ```
+   A["My Node (with parens)"]
+   B["Process: do thing"]
+   C{"Decision: any X?"}
+   ```
+   The square / curly brackets define the node shape; the **content**
+   between them must be quoted whenever it contains `:` `(` `)` `,` `;`
+   `/` `\` or any non-alphanumeric punctuation beyond `_ - .` spaces.
+
+5. **Keep IDs identifier-safe** — letters, digits, underscores only.
+   `participant API as "..."` is fine; `participant API.v2 as "..."`
+   is not. Use `_` where you'd otherwise reach for `.` or `-`.
+
+6. **One statement per line.** No `;` chaining edges. Terminate every
+   arrow with a target — bare `A -->` at end of line is a syntax error.
+
+7. **Self-check loop after every Mermaid block.** Before moving on,
+   re-read every `participant` line and every arrow line. If any of
+   them contains `(`, `)`, `,`, `:`, `;`, or `/` outside a quoted span,
+   wrap it now — do not wait for the validator to catch it.
+
+8. **Validator-clean is required before the spec is "done".** After
+   writing the spec, open the rendered `SPEC.html` in a browser, run
+   `specmintValidate()` in the page console, and fix every error
+   reported under area `mermaid`. The original source is preserved on
+   each failing `<pre class="mermaid">` via `data-mermaid-source` —
+   read it, fix it, reload, re-run. A spec with any
+   `figure.diagram--error` is not done.
+
+### Canonical sequenceDiagram template (copy this, then customize)
+
+```
+sequenceDiagram
+    participant U as "User"
+    participant FE as "Frontend (React, /sites + /setup)"
+    participant API as "Backend API"
+    participant DB as "PostgreSQL"
+
+    U->>FE: "click submit"
+    FE->>API: "POST /api/sites (body)"
+    API->>DB: "INSERT INTO sites"
+    DB-->>API: "201 Created"
+    API-->>FE: "200 OK"
+    FE-->>U: "show success toast"
+```
+
+Every alias and every label is in double quotes. Do not deviate.
+
+### Canonical flowchart template
+
+```
+flowchart LR
+    A["Start"] --> B{"Has token?"}
+    B -- yes --> C["Call /api (with token)"]
+    B -- no  --> D["Redirect /login"]
+    C --> E["200 OK"]
+```
 
 **Solution quality standards:**
 - Proposed solutions should be simple, maintainable, and professional
