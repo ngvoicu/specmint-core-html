@@ -95,11 +95,17 @@
       </div>
       <span class="progress progress--strip mb-3" data-progress-bar="ac" aria-hidden="true"></span>
       <ul class="ac-list">
+        <!--
+          Canonical AC item shape — checkbox is CSS-generated, do NOT add a
+          <span class="ac-check"> in markup. The only required child is
+          <span class="ac-text">. State lives in data-status on the <li>.
+        -->
         <li class="ac-item" id="ac-1" data-ac="1" data-status="pending">
-          <span class="ac-check"></span>
           <span class="ac-text"><!-- testable condition --></span>
         </li>
-        <!-- Add more <li class="ac-item"> rows with sequential ac-N ids -->
+        <li class="ac-item" id="ac-2" data-ac="2" data-status="pending">
+          <span class="ac-text"><!-- testable condition --></span>
+        </li>
         <!-- For unresolved questions, use: <span class="ac-text"><span class="ac-flag">Needs clarification</span> ...</span> -->
       </ul>
     </section>
@@ -149,11 +155,20 @@ flowchart LR
           <div class="phase__body">
             <span class="progress progress--strip mb-3" data-progress-bar="phase-1" aria-hidden="true"></span>
             <ul class="task-list">
+              <!--
+                Canonical task shape — checkbox is CSS-generated, do NOT add a
+                <span class="task__check"> in markup. Required children are
+                .task__code and .task__text; .task__tags is optional. State
+                lives in data-status on the <li>.
+              -->
               <li class="task" id="task-PFX-01" data-task="PFX-01" data-status="pending">
-                <span class="task__check"></span>
                 <span class="task__code">PFX-01</span>
                 <span class="task__text"><!-- Task description with file paths in <code> --></span>
                 <span class="task__tags"><span class="task__tag">#tag</span></span>
+              </li>
+              <li class="task" id="task-PFX-02" data-task="PFX-02" data-status="pending">
+                <span class="task__code">PFX-02</span>
+                <span class="task__text"><!-- Task description --></span>
               </li>
               <!-- More tasks; numbers auto-increment across all phases -->
             </ul>
