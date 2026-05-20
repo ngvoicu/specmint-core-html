@@ -11,8 +11,10 @@
  *                             on any data-status mutation.
  *   mountMermaid()          — Loads Mermaid v11 ESM from jsDelivr only when
  *                             at least one <pre class="mermaid"> exists.
- *   mountPrism()            — Loads PrismJS core + autoloader + diff-highlight
- *                             only when a <pre class="language-*"> exists.
+ *   mountDiffs()            — Parses every figure.code-diff into a row-based
+ *                             GitHub-style grid ([line# | sign | code]) and
+ *                             loads PrismJS core + autoloader (no diff-highlight
+ *                             plugin) to syntax-highlight the stripped code.
  *   mountAnnotationArrows() — For each .wf-annotation[data-points-to], draws
  *                             an SVG line from the annotation to the referenced
  *                             element. Redraws on resize (debounced 100ms).
@@ -313,20 +315,51 @@
   }
 
   // ---------------------------------------------------------------------------
-  // mountPrism
+  // mountDiffs — GitHub-style code-diff renderer.
   // ---------------------------------------------------------------------------
+  // The AI emits `<figure class="code-diff"><pre class="language-diff-LANG
+  // diff-highlight"><code>+ line\n  context\n- line</code></pre></figure>`.
+  // Instead of letting PrismJS's diff-highlight plugin tokenize the prefix
+  // chars inline, we parse the raw text ourselves and rebuild the DOM as a
+  // table-like grid: each line becomes a row of [line# | sign | code], with
+  // the code column highlighted by Prism using only the base language grammar
+  // (no diff- prefix). Net result: a real left gutter, no phantom 2-space
+  // indent on context lines, and full row backgrounds for added/removed.
 
-  function mountPrism() {
-    // Normalize every <pre> inside a figure.code-diff so PrismJS will pick it
-    // up even if the AI forgot one of the required hooks:
-    //   1. <pre> must carry `language-diff-LANG` AND `diff-highlight`
-    //   2. Content must be wrapped in <code> (PrismJS does not highlight
-    //      bare <pre> children)
-    document.querySelectorAll('figure.code-diff').forEach((fig) => {
-      const lang = (fig.getAttribute('data-language') || 'plaintext')
-        .toLowerCase().replace(/[^a-z0-9+-]/g, '');
-      // Inject a language chip into .code-diff__meta (or figcaption if no meta).
-      if (lang && lang !== 'plaintext') {
+  function mountDiffs() {
+    const figures = document.querySelectorAll('figure.code-diff');
+    if (figures.length === 0) return;
+
+    const blocks = [];
+    const langs = new Set();
+
+    figures.forEach((fig) => {
+      const pre = fig.querySelector('pre');
+      if (!pre) return;
+      const view = fig.getAttribute('data-view') || 'unified';
+
+      // Resolve language: data-language wins, otherwise pull out of
+      // `language-diff-LANG` class hook.
+      let lang = (fig.getAttribute('data-language') || '').toLowerCase();
+      if (!lang) {
+        const m = Array.from(pre.classList)
+          .map((c) => c.match(/^language-diff-(.+)$/))
+          .find(Boolean);
+        if (m) lang = m[1].toLowerCase();
+      }
+      lang = lang.replace(/[^a-z0-9+#-]/g, '') || 'plaintext';
+
+      // Snapshot the raw diff source from <code> (or bare <pre>) before
+      // we rewrite the DOM. Preserve it on data-diff-source for the
+      // validator + manual inspection.
+      const codeEl = pre.querySelector(':scope > code');
+      const raw = codeEl ? codeEl.textContent : pre.textContent;
+      pre.setAttribute('data-diff-source', raw);
+      pre.setAttribute('data-language', lang);
+      pre.setAttribute('data-view', view);
+
+      // Language chip in the figcaption / meta slot.
+      if (lang !== 'plaintext') {
         const meta = fig.querySelector('.code-diff__meta') || fig.querySelector('figcaption');
         if (meta && !meta.querySelector(':scope > .code-diff__lang')) {
           const chip = document.createElement('span');
@@ -335,55 +368,119 @@
           meta.prepend(chip);
         }
       }
-      fig.querySelectorAll('pre').forEach((pre) => {
-        // Class hygiene
-        if (!Array.from(pre.classList).some((c) => /^language-diff(-|$)/.test(c))) {
-          // Strip any other language-* class; replace with language-diff-LANG
-          Array.from(pre.classList).filter((c) => c.startsWith('language-')).forEach((c) => pre.classList.remove(c));
-          pre.classList.add(`language-diff-${lang}`);
-        }
-        if (!pre.classList.contains('diff-highlight')) pre.classList.add('diff-highlight');
-        // <code> wrapper
-        if (!pre.querySelector(':scope > code')) {
-          const code = document.createElement('code');
-          code.className = pre.className;
-          // Move children into <code>
-          while (pre.firstChild) code.appendChild(pre.firstChild);
-          pre.appendChild(code);
-        }
-      });
+
+      langs.add(lang);
+      blocks.push({ fig, pre, raw, lang, view });
     });
 
-    if (!document.querySelector('pre[class*="language-"]')) return;
+    if (blocks.length === 0) return;
 
-    const cssHrefs = [
-      'https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism.min.css',
-      'https://cdn.jsdelivr.net/npm/prismjs@1/plugins/diff-highlight/prism-diff-highlight.min.css',
-    ];
-    cssHrefs.forEach((href) => {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = href;
-      document.head.appendChild(link);
-    });
+    const renderAll = () => blocks.forEach(renderDiffBlock);
+
+    const needsPrism = blocks.some((b) => b.lang !== 'plaintext');
+    if (!needsPrism) { renderAll(); return; }
+
+    // PrismJS core + autoloader only (no diff-highlight plugin — we tokenize
+    // diffs ourselves and only ask Prism to highlight the stripped code).
+    const themeLink = document.createElement('link');
+    themeLink.rel = 'stylesheet';
+    themeLink.href = 'https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism.min.css';
+    document.head.appendChild(themeLink);
 
     const jsSrcs = [
       'https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-core.min.js',
       'https://cdn.jsdelivr.net/npm/prismjs@1/plugins/autoloader/prism-autoloader.min.js',
-      'https://cdn.jsdelivr.net/npm/prismjs@1/plugins/diff-highlight/prism-diff-highlight.min.js',
     ];
-    const loadNext = (i) => {
+    let i = 0;
+    const loadNext = () => {
       if (i >= jsSrcs.length) {
-        if (window.Prism && window.Prism.highlightAll) window.Prism.highlightAll();
+        const al = window.Prism && window.Prism.plugins && window.Prism.plugins.autoloader;
+        if (al) {
+          al.languages_path = 'https://cdn.jsdelivr.net/npm/prismjs@1/components/';
+          al.loadLanguages(Array.from(langs), renderAll, () => renderAll());
+        } else {
+          renderAll();
+        }
         return;
       }
       const s = document.createElement('script');
-      s.src = jsSrcs[i];
-      s.onload = () => loadNext(i + 1);
-      s.onerror = () => console.warn('[specmint] PrismJS failed to load — code blocks render as plain text.');
+      s.src = jsSrcs[i++];
+      s.onload = loadNext;
+      s.onerror = () => {
+        console.warn('[specmint] PrismJS failed to load — diffs render as plain text.');
+        renderAll();
+      };
       document.head.appendChild(s);
     };
-    loadNext(0);
+    loadNext();
+  }
+
+  function renderDiffBlock(block) {
+    const { fig, pre, raw, lang, view } = block;
+    const lines = raw.replace(/\n$/, '').split('\n');
+
+    const container = document.createElement('div');
+    container.className = `diff-rows diff-rows--${view}`;
+
+    let lineNum = 1;
+    lines.forEach((line) => {
+      let type, content;
+      const head = line[0];
+      if (head === '+') {
+        type = 'added';
+        content = line.length > 1 && line[1] === ' ' ? line.slice(2) : line.slice(1);
+      } else if (head === '-') {
+        type = 'removed';
+        content = line.length > 1 && line[1] === ' ' ? line.slice(2) : line.slice(1);
+      } else if (head === ' ') {
+        // Two leading spaces = context; strip them so the code lines up.
+        content = line.length > 1 && line[1] === ' ' ? line.slice(2) : line.slice(1);
+        type = 'context';
+      } else if (line === '') {
+        type = 'context'; content = '';
+      } else {
+        // No prefix at all — treat as context, render verbatim.
+        type = 'context'; content = line;
+      }
+
+      const row = document.createElement('div');
+      row.className = `diff-row diff-row--${type}`;
+
+      const numEl = document.createElement('span');
+      numEl.className = 'diff-num';
+      numEl.textContent = String(lineNum++);
+      numEl.setAttribute('aria-hidden', 'true');
+
+      const signEl = document.createElement('span');
+      signEl.className = 'diff-sign';
+      signEl.textContent = type === 'added' ? '+' : type === 'removed' ? '-' : ' ';
+      signEl.setAttribute('aria-hidden', 'true');
+
+      const codeEl = document.createElement('span');
+      codeEl.className = 'diff-code';
+      const grammar = window.Prism && window.Prism.languages && window.Prism.languages[lang];
+      if (grammar) {
+        try {
+          codeEl.innerHTML = window.Prism.highlight(content, grammar, lang);
+        } catch (e) {
+          codeEl.textContent = content;
+        }
+      } else {
+        codeEl.textContent = content;
+      }
+
+      row.append(numEl, signEl, codeEl);
+      container.appendChild(row);
+    });
+
+    // Replace the pre's content with the row container. Strip language-diff-*
+    // and diff-highlight classes so any leftover Prism logic skips this <pre>.
+    pre.innerHTML = '';
+    Array.from(pre.classList)
+      .filter((c) => c.startsWith('language-') || c === 'diff-highlight')
+      .forEach((c) => pre.classList.remove(c));
+    pre.classList.add('diff-rendered');
+    pre.appendChild(container);
   }
 
   // ---------------------------------------------------------------------------
@@ -648,7 +745,7 @@
 
   async function init() {
     deriveProgress();
-    mountPrism();
+    mountDiffs();
     mountAnnotationArrows();
     mountCopyButtons();
     mountTocActiveSection();
