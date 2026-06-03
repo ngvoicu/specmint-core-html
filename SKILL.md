@@ -10,6 +10,10 @@ description: >
   or exits plan mode (offer to save as a spec). Also trigger when a `.specs/`
   directory exists at session start. Do NOT trigger on general feature
   requests, coding tasks, or questions that don't mention specs or forging.
+license: MIT
+metadata:
+  author: Gabriel Voicu
+  version: "3.0.0"
 ---
 
 # Spec Mint Core HTML
