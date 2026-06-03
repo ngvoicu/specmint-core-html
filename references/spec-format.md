@@ -4,7 +4,7 @@ The complete format specification for HTML spec documents. Use this as the canon
 
 ## File layout
 
-Every project that uses this plugin has a `.specs/` directory at the project root:
+Every project that uses this skill has a `.specs/` directory at the project root:
 
 ```
 .specs/
@@ -20,7 +20,7 @@ Every project that uses this plugin has a `.specs/` directory at the project roo
                                #   attempt dumps). Never authoritative.
 ```
 
-The `.specs/assets/` directory is shared by every spec. AI never hand-edits these — they are the design system, copied from the plugin's `assets/` on every forge so existing projects pick up runtime fixes. Each `SPEC.html` references them via relative paths: `../assets/spec-styles.css` and `../assets/spec-runtime.js`.
+The `.specs/assets/` directory is shared by every spec. AI never hand-edits these — they are the design system, copied from the skill's `assets/` on every forge so existing projects pick up runtime fixes. Each `SPEC.html` references them via relative paths: `../assets/spec-styles.css` and `../assets/spec-runtime.js`.
 
 The per-spec `artifacts/` subdirectory is **optional**: only create it when the AI tool needs to persist scratch files (e.g., test-run logs the tool can't carry across turns in memory). Files inside `artifacts/` are never read back as authoritative — the spec's Decision Log, research-/interview notes, and (for TDD) the TDD Log section inside `SPEC.html` are the durable record. Don't write scratch files anywhere else under `.specs/<id>/`.
 
@@ -124,7 +124,7 @@ A `<div class="phases">` containing one `<details class="phase" open data-phase=
 
 PrismJS `diff-highlight` plugin provides simultaneous red/green line backgrounds AND syntax highlighting for the underlying language.
 
-**Coverage rule:** Code Previews are **expected on every feature spec**, not optional. Include one canonical figure per category — new interface/contract, new data model or schema, non-trivial business logic, before→after of significant refactors, the shape of each new test pattern. Skip boilerplate, repeated patterns, and codegen output. Typical sizing: 2-4 previews for a small spec, 5-10 for medium, 10-20 for large (API + DB + UI). See SKILL.md / commands/forge.md for the full selection rules.
+**Coverage rule:** Code Previews are **expected on every feature spec**, not optional. Include one canonical figure per category — new interface/contract, new data model or schema, non-trivial business logic, before→after of significant refactors, the shape of each new test pattern. Skip boilerplate, repeated patterns, and codegen output. Typical sizing: 2-4 previews for a small spec, 5-10 for medium, 10-20 for large (API + DB + UI). See SKILL.md for the full selection rules.
 
 **Unified vs split:** Unified is the default (one `<pre>`). For changes >30 lines or spanning multiple files / non-contiguous hunks, add `data-view="split"` to the `<figure>` to render side-by-side.
 
@@ -179,7 +179,7 @@ HTML specs checkpoint state at **task boundaries only**. Mid-task partial state 
 
 ## TDD additions
 
-TDD-only sections are documented in the `specmint-tdd-html` plugin's `references/spec-format.md`. The additions are:
+TDD-only sections are documented in the `specmint-tdd-html` skill's `references/spec-format.md`. The additions are:
 - Testing Architecture region (after architecture)
 - TDD Log region (before deviations) — swimlane rendering
 - Task tags include `[TEST-XX-NN]` / `[IMPL-XX-NN]` with `→ satisfies` references

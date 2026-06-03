@@ -1,7 +1,7 @@
 # Command Contracts
 
-This file defines functional contracts for `commands/*.md` and the universal
-`SKILL.md` behavior. Use it as a review checklist before releases.
+This file defines functional contracts for the `SKILL.md` skill. Use it as a
+review checklist before releases.
 
 ## Global Contracts
 
@@ -30,7 +30,7 @@ This file defines functional contracts for `commands/*.md` and the universal
 
 ## Command Contracts
 
-### `/specmint-core-html:forge`
+### Forge
 
 1. Resolve `<spec-id>` before research output paths are referenced.
 2. Collision-check existing spec IDs before creating new files (check
@@ -38,12 +38,12 @@ This file defines functional contracts for `commands/*.md` and the universal
 3. Forge must not run in plan mode; if plan mode is active, require exit
    before continuing.
 4. Refresh `.specs/assets/` on every forge: copy `spec-styles.css` and
-   `spec-runtime.js` from the plugin's `assets/` directory, **overwriting
-   any existing files**. The runtime is plugin-managed; overwrite-on-forge
+   `spec-runtime.js` from the skill's `assets/` directory, **overwriting
+   any existing files**. The runtime is skill-managed; overwrite-on-forge
    ensures existing projects pick up rendering fixes.
 5. Output scope is `.specs/` artifacts only (`research-*.md`,
    `interview-*.md`, `SPEC.html`, `registry.md` updates, assets on first run).
-6. After approval, handoff to `/specmint-core-html:implement` instead of
+6. After approval, hand off to the implement workflow instead of
    implementing inside forge.
 7. Interview must ask about acceptance criteria ("What does 'done' look like?").
 8. **If UI work is in scope, interview must ask about mockup fidelity**
@@ -56,7 +56,7 @@ This file defines functional contracts for `commands/*.md` and the universal
 10. Forge must run `references/validate.md` before presenting the spec.
 11. SPEC.html must be derived from `references/html-template.html`.
 
-### `/specmint-core-html:implement`
+### Implement
 
 1. Supports scope parsing: current flow, phase-specific, all phases, task code.
 2. For each completed task: swap `data-status="pending"` →
@@ -72,7 +72,7 @@ This file defines functional contracts for `commands/*.md` and the universal
    - Mark phase `data-status="blocked"` only when the whole phase is blocked.
    - Record blocker context in the Decision Log or Deviations.
 
-### `/specmint-core-html:resume`
+### Resume
 
 1. If no active spec exists, list specs and request target.
 2. Parse progress from `SPEC.html` `data-status` counts.
@@ -80,7 +80,7 @@ This file defines functional contracts for `commands/*.md` and the universal
    and current task (first task with `data-status="pending"` in that phase).
 4. Present a compact summary. No separate Resume Context section to read.
 
-### `/specmint-core-html:pause`
+### Pause
 
 1. If no active spec exists, report no-op and stop.
 2. Finalize state at the current task boundary — every completed task has
@@ -89,14 +89,14 @@ This file defines functional contracts for `commands/*.md` and the universal
 4. Set status `paused` (JSON + visible pill) and sync registry.
 5. Run `references/validate.md`.
 
-### `/specmint-core-html:switch`
+### Switch
 
 1. Validate target ID and target `SPEC.html` existence before pausing
    current spec.
 2. If target already active, report and stop.
 3. Pause current (if any), activate target, resume target, sync registry.
 
-### `/specmint-core-html:list`
+### List
 
 1. Handle missing registry gracefully.
 2. Group by status in order: active, paused, completed, archived.
@@ -104,12 +104,12 @@ This file defines functional contracts for `commands/*.md` and the universal
 4. Compute task counts by reading each `SPEC.html` and counting
    `<li class="task">` elements by `data-status`.
 
-### `/specmint-core-html:status`
+### Status
 
 1. Show detailed phase/task breakdown for active spec.
 2. If no active spec, guide to activate one.
 
-### `/specmint-core-html:openapi`
+### OpenAPI
 
 1. Generate/update `.openapi/openapi.yaml` and `.openapi/endpoints/*.md`.
 2. Preserve manual additions when updating existing files.
@@ -120,17 +120,12 @@ This file defines functional contracts for `commands/*.md` and the universal
 
 1. `SKILL.md` must include cross-tool behavior for all declared triggers.
 2. If `generate openapi` is listed as a trigger, OpenAPI workflow behavior
-   must be defined in `SKILL.md` (not only plugin command files).
-3. Command-specific docs can specialize behavior but cannot violate critical
-   invariants from `SKILL.md`.
+   must be defined in `SKILL.md`.
 
 ## Release Checklist
 
-1. `claude plugin validate .claude-plugin/plugin.json` passes.
-2. `claude plugin validate .claude-plugin/marketplace.json` passes without
-   warnings.
-3. Paths referenced in docs and templates exist (excluding placeholder paths).
-4. Command contracts in this file still match `commands/*.md` and `SKILL.md`.
-5. `assets/spec-styles.css` and `assets/spec-runtime.js` exist and are
+1. Paths referenced in docs and templates exist (excluding placeholder paths).
+2. Command contracts in this file still match `SKILL.md`.
+3. `assets/spec-styles.css` and `assets/spec-runtime.js` exist and are
    distributed to consumer projects' `.specs/assets/` on first forge.
-6. `references/html-template.html` validates with `references/validate.md`.
+4. `references/html-template.html` validates with `references/validate.md`.
