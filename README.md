@@ -10,7 +10,7 @@ Spec Mint Core HTML replaces ephemeral AI coding plans with persistent, resumabl
 
 Works with Claude Code, Codex, Cursor, Windsurf, Cline, Gemini CLI, and any AI coding tool that can read files — installed as a universal skill.
 
-**[→ See a rendered SPEC.html](https://specmint.io/#gallery)** on specmint.io — Team Invites exemplar with Mermaid diagrams, code diffs, and hi-fi UI mockups.
+**[→ See a rendered SPEC.html](https://specmint.ngvoicu.dev/#gallery)** on specmint.ngvoicu.dev — Team Invites exemplar with Mermaid diagrams, code diffs, and hi-fi UI mockups.
 
 ## The Problem
 

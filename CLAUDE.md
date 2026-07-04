@@ -28,7 +28,7 @@ Topics relevant to this repo: specmint-core-html overview, HTML format rationale
 
 The skill has two conceptual layers:
 
-**Skill layer** (this repo) — `SKILL.md` (the universal skill behavior — workflow, lifecycle, invariants), `references/*` (format reference, edit recipes, validator, mockup libraries, and `researcher.md` — the deep-research subagent brief spawned via the Task tool during forge), `assets/*` (shared `spec-styles.css` + `spec-runtime.js` copied into consuming projects). The rendered preview lives at <https://specmint.io/#gallery>. AI tools read these markdown files as behavioral instructions.
+**Skill layer** (this repo) — `SKILL.md` (the universal skill behavior — workflow, lifecycle, invariants), `references/*` (format reference, edit recipes, validator, mockup libraries, and `researcher.md` — the deep-research subagent brief spawned via the Task tool during forge), `assets/*` (shared `spec-styles.css` + `spec-runtime.js` copied into consuming projects). The rendered preview lives at <https://specmint.ngvoicu.dev/#gallery>. AI tools read these markdown files as behavioral instructions.
 
 **Data layer** (consuming project) — `.specs/` directory created in the consuming project root (not here). Layout:
 
@@ -76,7 +76,7 @@ The skill has two conceptual layers:
 - Edit `references/command-contracts.md` when you change behavioral contracts; this is the review checklist.
 
 ### Format changes
-- Edit `assets/spec-styles.css` / `assets/spec-runtime.js` to change rendered visual / runtime behavior for every generated `SPEC.html`. To eyeball changes, dogfood the skill in a disposable consumer project — install it (e.g. `npx skills add ./. -g -a claude-code`, or copy `SKILL.md` into its skills dir), trigger the forge workflow with natural language, then open the generated `.specs/<id>/SPEC.html`. The reference render lives at <https://specmint.io/#gallery>.
+- Edit `assets/spec-styles.css` / `assets/spec-runtime.js` to change rendered visual / runtime behavior for every generated `SPEC.html`. To eyeball changes, dogfood the skill in a disposable consumer project — install it (e.g. `npx skills add ./. -g -a claude-code`, or copy `SKILL.md` into its skills dir), trigger the forge workflow with natural language, then open the generated `.specs/<id>/SPEC.html`. The reference render lives at <https://specmint.ngvoicu.dev/#gallery>.
 - After any spec-format change, run the validate recipe on a generated `SPEC.html`:
   ```bash
   python3 -c "
