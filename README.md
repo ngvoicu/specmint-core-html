@@ -271,7 +271,7 @@ Spec Mint Core HTML's forge workflow does what plan mode should do:
 
 ## Pair with Kluris
 
-Spec Mint Core HTML reads your codebase. [Kluris](https://kluris.io) gives your agents the *other* half — the tribal knowledge that never made it into comments: architecture decisions, past incidents, vendor quirks, the "why" behind every weird choice.
+Spec Mint Core HTML reads your codebase. [Kluris](https://kluris.ngvoicu.dev) gives your agents the *other* half — the tribal knowledge that never made it into comments: architecture decisions, past incidents, vendor quirks, the "why" behind every weird choice.
 
 Pair them and the forge workflow's Phase 1b (research) stops guessing. It consults the brain first.
 
@@ -302,7 +302,7 @@ pipx install kluris
 kluris wake-up
 ```
 
-Full setup at [kluris.io](https://kluris.io).
+Full setup at [kluris.ngvoicu.dev](https://kluris.ngvoicu.dev).
 
 ## License
 
