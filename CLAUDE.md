@@ -28,7 +28,7 @@ Topics relevant to this repo: specmint-core-html overview, HTML format rationale
 
 The skill has two conceptual layers:
 
-**Skill layer** (this repo) — `SKILL.md` (the universal skill behavior — workflow, lifecycle, invariants), `references/*` (format reference, edit recipes, validator, mockup libraries, and `researcher.md` — the deep-research subagent brief spawned via the Task tool during forge), `assets/*` (shared `spec-styles.css` + `spec-runtime.js` copied into consuming projects). The rendered preview lives at <https://specmint.ngvoicu.dev/#gallery>. AI tools read these markdown files as behavioral instructions.
+**Skill layer** (this repo) — `SKILL.md` (the universal skill behavior — workflow, lifecycle, invariants), `references/*` (format reference, edit recipes, validator, mockup libraries, and `researcher.md` — the deep-research subagent brief spawned via the tool's subagent/task feature (e.g. Claude Code's Agent tool) during forge), `assets/*` (shared `spec-styles.css` + `spec-runtime.js` copied into consuming projects). The rendered preview lives at <https://specmint.ngvoicu.dev/#gallery>. AI tools read these markdown files as behavioral instructions.
 
 **Data layer** (consuming project) — `.specs/` directory created in the consuming project root (not here). Layout:
 

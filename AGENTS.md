@@ -8,7 +8,7 @@ For architectural context across the Mint family (core vs TDD, core-vs-core-html
 
 - `SKILL.md`: the universal, cross-tool skill — workflow, lifecycle rules, invariants, and OpenAPI behavior. The single behavioral contract.
 - `references/`:
-  - `researcher.md` — deep-research subagent brief, spawned via the Task tool during forge.
+  - `researcher.md` — deep-research subagent brief, spawned via the tool's subagent/task feature (e.g. Claude Code's Agent tool) during forge.
   - `spec-format.md` — canonical `SPEC.html` format reference (regions, `data-status`, JSON key order, conventions).
   - `html-template.html` — empty canonical template AI seeds from.
   - `edit-recipes.md` — before/after snippets for every common surgical edit.
